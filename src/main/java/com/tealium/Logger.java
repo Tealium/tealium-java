@@ -6,7 +6,7 @@ import java.io.PrintStream;
 /**
  * Tealium logger for debugging.
  *
- * @author Jason Koo, Chad Hartman, Karen Tamayo, Merritt Tidwell
+ * @author Jason Koo, Chad Hartman, Karen Tamayo, Merritt Tidwell, Chris Anderberg
  */
 final class Logger {
 
@@ -48,5 +48,5 @@ final class Logger {
             out.println(t);
             t.printStackTrace(out);
         }
-    };
+    }
 }

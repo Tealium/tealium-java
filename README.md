@@ -27,6 +27,12 @@ AudienceStream™ allows you to create a unified view of your customers, correla
 * If you have **account specific questions** please contact your Tealium account manager
 
 ## Change Log
+- 1.3.0 Remove visitor_id and switch to event endpoint
+    - "tealium_visitor_id" and "tealium_vid" removed
+    - Use the "event" endpoint using the POST method with json
+    - Create a Udo data object to represent data instead of the ambiguous Map<String, Object>
+    - Update methods to use the Udo data type and deprecate api methods using Map<String, Object> for data.
+    - Lots of refactoring and introduction of TDD practices to encourage more maintainable code in the library.
 - 1.2.0 Add Datasource
 	- New variable added:
 		- tealium_datasource

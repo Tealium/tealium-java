@@ -5,7 +5,12 @@ import org.junit.Test;
 import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class LoggerTest {
+/**
+ * Test logic related to the Logger
+ *
+ * Jason Koo, Chad Hartman, Karen Tamayo, Merritt Tidwell, Chris Anderberg
+ */
+public class LoggerTests {
 	@Test
 	public void testMatchingVerbosity() throws Exception{
 		String message = "Successful Log Test";

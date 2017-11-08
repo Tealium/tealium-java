@@ -1,8 +1,7 @@
 package com.tealium;
 
 import static org.junit.Assert.assertTrue;
-
-import java.util.HashMap;
+import static org.junit.Assert.assertFalse;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -12,38 +11,46 @@ import org.junit.Test;
 
 import com.tealium.Tealium.DispatchCallback;
 
-public class TealiumTest {
+/**
+ * Test logic related to Tealium
+ *
+ * Jason Koo, Chad Hartman, Karen Tamayo, Merritt Tidwell, Chris Anderberg
+ */
+public class TealiumTests {
 
     @Test
     public void testTealiumInit() throws Exception {
-        new Tealium.Builder("tealiummobile", "main", "dev").build();
+        new Tealium.Builder("tealiummobile", "main").build();
     }
 
     @Test
     public void testTealiumInitWithLogLevel() throws Exception {
-        new Tealium.Builder("tealiummobile", "main", "dev")
+        new Tealium.Builder("tealiummobile", "main")
                 .setLogLevel(LogLevel.WARNINGS)
                 .build();
 
     }
 
     @Test
-    public void name() throws Exception {
+    public void testTrackCallContainsCorrectData() throws InterruptedException {
 
-    }
+        // create a fake persistent data that just returns the defualt data
+        PersistentUdo persistentUdoFake = new PersistentUdo(null) {
+            @Override
+            public Udo readOrCreateUdo(Udo defaultData) {
+                return defaultData;
+            }
 
-    @Test
-    public void testTrack() throws InterruptedException {
+            @Override
+            public void writeData(Udo data) {
 
-        FileUtils.deletePersistentFile(TestLibraryContext.newInstance());
-
-        Tealium tealium = new Tealium.Builder("tealiummobile", "demo")
-        		.setEnvironment("env").setDatasource("datasource").build();
+            }
+        };
 
         final CountDownLatch barrier = new CountDownLatch(3);
 
         // Keys and values should have been checked by other class tests - just double checking keys here
-        Map<String, Object> expectedKeys = new HashMap<String, Object>();
+        Udo expectedKeys = new Udo();
         expectedKeys.put("event_name", "value");
         expectedKeys.put("tealium_account", "value");
         expectedKeys.put("tealium_environment", "value");
@@ -56,36 +63,41 @@ public class TealiumTest {
         expectedKeys.put("tealium_random", "value");
         expectedKeys.put("tealium_session_id", "value");
         expectedKeys.put("tealium_timestamp_epoch", "value");
-        expectedKeys.put("tealium_visitor_id", "value");
-        
-        final Map<String, Object> expectedKeysImmutable = new HashMap<String, Object>(expectedKeys);
+
+        final Udo expectedKeysImmutable = new Udo(expectedKeys);
 
         DispatchCallback callBack = new DispatchCallback() {
             @Override
             public void dispatchComplete(boolean success, Map<String, Object> info, String error) {
 
-                Map<String, Object> payload = (HashMap<String, Object>)info.get("payload");
+                Udo payload = (Udo) info.get("payload");
 
-                assertTrue(success);
-                assertTrue(mapContainsKeysFromMap(payload, expectedKeysImmutable));
+                assertTrue(udoContainsKeysFromUdo(payload, expectedKeysImmutable));
+                assertFalse(payload.containsKey("tealium_visitor_id"));
+                assertFalse(payload.containsKey("tealium_vid"));
 
                 barrier.countDown();
             }
         };
 
+        Tealium tealium = new Tealium.Builder("tealiummobile", "demo")
+                .setEnvironment("env")
+                .setDatasource("datasource")
+                .setPersistentData(persistentUdoFake)
+                .build();
+
         tealium.track("test", null, callBack);
         barrier.await(1, TimeUnit.SECONDS);
-
     }
 
     // =========================================================================
     // HELPERS
     // =========================================================================
 
-    boolean mapContainsKeysFromMap(Map<String, Object> sourceMap, Map<String, Object> subSetMap) {
+    boolean udoContainsKeysFromUdo(Udo sourceUdo, Udo subsetUdo) {
 
-        Set<String> sourceKeys = sourceMap.keySet();
-        Set<String> subSetKeys = subSetMap.keySet();
+        Set<String> sourceKeys = sourceUdo.keySet();
+        Set<String> subSetKeys = subsetUdo.keySet();
 
         for (String k : subSetKeys) {
             if (!sourceKeys.contains(k)) {

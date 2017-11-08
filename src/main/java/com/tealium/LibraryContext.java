@@ -1,6 +1,16 @@
 package com.tealium;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Locale;
+
+/**
+ * Data class for defining library configuration and other information
+ *
+ * @author Jason Koo, Chad Hartman, Karen Tamayo, Merritt Tidwell, Chris Anderberg
+ */
 class LibraryContext {
+    public static final String version = "1.3.0";
 
     private final String account;
     private final String profile;
@@ -35,6 +45,11 @@ class LibraryContext {
 
     final Logger getLogger() {
         return logger;
+    }
+
+    final Path getPersistentFilePath() {
+        return Paths.get(System.getProperty("user.home"), ".tealium",
+                String.format(Locale.ROOT, "%s.%s.data", this.getAccount(), this.getProfile()));
     }
 
 }

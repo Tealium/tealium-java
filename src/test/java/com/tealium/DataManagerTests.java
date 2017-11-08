@@ -3,23 +3,29 @@ package com.tealium;
 import com.tealium.DataManager.Key;
 import org.junit.Test;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
-public class DataManagerTest {
+/**
+ * Test logic related to DataManager
+ *
+ * Jason Koo, Chad Hartman, Karen Tamayo, Merritt Tidwell, Chris Anderberg
+ */
+public class DataManagerTests {
+
     @Test
     public void testInit() throws Exception {
-        new DataManager(TestLibraryContext.newInstance());
+        TestLibraryContext testCtx = TestLibraryContext.newInstance();
+        new DataManager(testCtx, TestUtils.dummyPersistentUdo());
     }
 
     @Test
     public void testRandom() throws Exception {
-        DataManager data = new DataManager(TestLibraryContext.newInstance());
+        TestLibraryContext testCtx = TestLibraryContext.newInstance();
+        DataManager data = new DataManager(testCtx, TestUtils.dummyPersistentUdo());
         ArrayList<String> randomArray = new ArrayList<String>();
         Class<? extends DataManager> myclass = data.getClass();
         Method method = myclass.getDeclaredMethod("getRandom");
@@ -42,10 +48,9 @@ public class DataManagerTest {
     public void testGetPersistentData() throws Exception {
 
         LibraryContext ctx = TestLibraryContext.newInstance();
-        FileUtils.deletePersistentFile(ctx);
 
-        DataManager data = new DataManager(ctx);
-        Map<String, Object> map = new HashMap<>();
+        DataManager data = new DataManager(ctx, TestUtils.dummyPersistentUdo());
+        Udo map = new Udo();
 
         String key = "testKey";
         String value = "testValue";
@@ -60,40 +65,60 @@ public class DataManagerTest {
         method.setAccessible(true);
 
         @SuppressWarnings("unchecked")
-        Map<String, Object> savedData = (Map<String, Object>) method.invoke(data);
+        Udo savedData = (Udo) method.invoke(data);
 
         assertTrue(savedData.containsKey(key));
         assertTrue(savedData.containsValue(value));
     }
 
+    /*
+     * Test that new data doesn't contain visitor id or vid
+     * Test that new data contains expected variables
+     */
     @Test
-    public void testCreateNewVisitorId() throws Exception {
-        LibraryContext ctx = TestLibraryContext.newInstance();
-        FileUtils.deletePersistentFile(ctx);
-
-        DataManager data = new DataManager(ctx);
-
-        Class<? extends DataManager> myclass = data.getClass();
-        Method method = myclass.getDeclaredMethod("createNewVisitorId");
-        method.setAccessible(true);
-
-        String visitorID = (String) method.invoke(data);
-        String visitorID2 = (String) method.invoke(data);
-        assertFalse(visitorID.equals(visitorID2));
-
-    }
-
-    @Test
-    public void testNewPersistentData() throws Exception {
+    public void testNewPersistentData() throws PersistentDataAccessException, NoSuchMethodException,
+            IllegalAccessException, InvocationTargetException {
 
         String account = "account";
         String profile = "profile";
         String env = "env";
         String datasource = "datasource";
         LibraryContext ctx = new LibraryContext(account, profile, env, datasource, new Logger(LogLevel.VERBOSE));
-        FileUtils.deletePersistentFile(ctx);
 
-        DataManager data = new DataManager(ctx);
+        DataManager data = new DataManager(ctx, TestUtils.dummyPersistentUdo());
+
+        Class<? extends DataManager> myclass = data.getClass();
+        Method method = myclass.getDeclaredMethod("createNewPersistentData");
+        method.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        Udo persistentData = (Udo) method.invoke(data);
+
+        Udo expectedData = new Udo();
+        expectedData.put("tealium_account", account);
+        expectedData.put("tealium_profile", profile);
+        expectedData.put("tealium_environment", env);
+        expectedData.put("tealium_library_name", "java");
+        expectedData.put("tealium_library_version", LibraryContext.version);
+
+        assertTrue(udoContainsUdo(persistentData, expectedData));
+        assertFalse(persistentData.containsKey("tealium_vid"));
+        assertFalse(persistentData.containsKey("tealium_visitor_id"));
+    }
+
+    /*
+     * Test that new data doesn't contain visitor id or vid
+     */
+    @Test
+    public void testNewPersistentDataDoesNotContainVisitorId() throws PersistentDataAccessException,
+            NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+        String account = "account";
+        String profile = "profile";
+        String env = "env";
+        String datasource = "datasource";
+        LibraryContext ctx = new LibraryContext(account, profile, env, datasource, new Logger(LogLevel.VERBOSE));
+
+        DataManager data = new DataManager(ctx, TestUtils.dummyPersistentUdo());
 
         Class<? extends DataManager> myclass = data.getClass();
         Method method = myclass.getDeclaredMethod("createNewPersistentData");
@@ -102,27 +127,18 @@ public class DataManagerTest {
         @SuppressWarnings("unchecked")
         Map<String, Object> persistentData = (Map<String, Object>) method.invoke(data);
 
-        Map<String, Object> expectedData = new HashMap<>();
-        expectedData.put("tealium_account", account);
-        expectedData.put("tealium_profile", profile);
-        expectedData.put("tealium_environment", env);
-
-        String notTestingThisHere = (String) persistentData.get(Key.TEALIUM_VISITOR_ID);
-        expectedData.put("tealium_visitor_id", notTestingThisHere);
-        expectedData.put("tealium_vid", notTestingThisHere);
-        expectedData.put("tealium_library_name", "java");
-        expectedData.put("tealium_library_version", "1.2.0");
-
-        assertTrue(mapContainsMap(persistentData, expectedData));
-
+        assertFalse(persistentData.containsKey(Key.TEALIUM_VISITOR_ID));
+        assertFalse(persistentData.containsKey("tealium_vid"));
     }
 
+    // test that two consecutive session id resets don't result in the same new session id
     @Test
-    public void testResetSessionId() throws InterruptedException {
+    public void testResetSessionId() throws InterruptedException, PersistentDataAccessException {
 
         LibraryContext ctx = TestLibraryContext.newInstance();
 
-        DataManager data = new DataManager(ctx);
+        DataManager data = new DataManager(ctx, TestUtils.dummyPersistentUdo());
+
         String sessionId = data.resetSessionId();
         Thread.sleep(100);
         String sessionId2 = data.resetSessionId();
@@ -134,7 +150,10 @@ public class DataManagerTest {
     // HELPERS
     // =========================================================================
 
-    boolean mapContainsMap(Map<String, Object> sourceMap, Map<String, Object> subSetMap) {
+    /*
+     * Determine if the set of key/value pairs in one map is a subset of the key/value pairs of another map
+     */
+    boolean udoContainsUdo(Udo sourceMap, Udo subSetMap) {
 
         Set<String> sourceKeys = sourceMap.keySet();
         Set<String> subSetKeys = subSetMap.keySet();

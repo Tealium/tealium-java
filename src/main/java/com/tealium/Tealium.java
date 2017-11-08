@@ -1,23 +1,24 @@
 package com.tealium;
 
-import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Locale;
 import java.util.Map;
 
 import com.tealium.DataManager.Key;
 import com.tealium.DataManager.EventType;
-import com.tealium.DataManager.InfoKey;
 
 /**
  * Tealium library for conversion and dispatch handling of natively triggered
  * events.
  *
- * @author Jason Koo, Chad Hartman, Karen Tamayo, Merritt Tidwell
+ * @author Jason Koo, Chad Hartman, Karen Tamayo, Merritt Tidwell, Chris Anderberg
  */
 public final class Tealium {
 
     // Public API Fields should never be public; see Effective Java Item 14
-    private final DataManager data;
-    private final CollectDispatchService collect;
+    private final DataManager dataManager;
+    private final CollectDispatcher collectDispatcher;
     private final LibraryContext libraryContext;
 
     // =========================================================================
@@ -30,6 +31,8 @@ public final class Tealium {
         private final String profile;
         private String environment;
         private String datasource;
+        private CollectDispatcher collectDispatcher = null;
+        private PersistentUdo persistentData = null;
         private LogLevel logLevel = LogLevel.VERBOSE;
         private int timeout = 5000;
 
@@ -42,10 +45,21 @@ public final class Tealium {
          *            Required. Tealium profile name.
          */
         public Builder(String account, String profile) {
-            if (Util.isEmpty(this.account = account) || Util.isEmpty(this.profile = profile)) {
-                throw new IllegalArgumentException("account & profile must not be empty.");
+            if (stringIsNullOrEmpty(account) || stringIsNullOrEmpty(profile)) {
+                throw new IllegalArgumentException("Neither account nor profile may be null or empty.");
             }
+
+            this.account = account;
+            this.profile = profile;
         }
+
+        /**
+         * Convenience function for making code prettier and more readable.
+         *
+         * @param str
+         * @return true if the string is either null or empty
+         */
+        private static boolean stringIsNullOrEmpty(String str) {return str == null || str.length() == 0;}
         
         /**
          * Constructor for a new Tealium object.
@@ -65,10 +79,15 @@ public final class Tealium {
          */
         @Deprecated
         public Builder(String account, String profile, String environment) {
-            if (Util.isEmpty(this.account = account) || Util.isEmpty(this.profile = profile)
-                    || Util.isEmpty(this.environment = environment)) {
-                throw new IllegalArgumentException("account, profile, & environment must not be empty.");
+            if ((account == null) || (account.length() == 0)
+                    || (profile == null) || (profile.length() == 0)
+                    || (environment == null) || (environment.length() == 0)) {
+                throw new IllegalArgumentException("Account, profile, & environment must not be empty.");
             }
+
+            this.account = account;
+            this.profile = profile;
+            this.environment = environment;
         }
 
         /**
@@ -77,9 +96,24 @@ public final class Tealium {
          * @return Instance of Tealium.
          */
         public Tealium build() {
-            return new Tealium(
-                    new LibraryContext(this.account, this.profile, this.environment, this.datasource, new Logger(this.logLevel)),
-                    this.timeout);
+            Path persistentFilePath = Paths.get(System.getProperty("user.home"), ".tealium",
+                    String.format(Locale.ROOT, "%s.%s.data", this.account, this.profile));
+
+            LibraryContext libraryContext = new LibraryContext(this.account, this.profile,
+                    this.environment, this.datasource, new Logger(this.logLevel));
+
+
+            // set the persistent data if it hasn't been explicitly set with the setPersistentData() method.
+            if(this.persistentData == null) {
+                this.persistentData = new PersistentUdo(new TextStorage(persistentFilePath));
+            }
+
+            // set the collect dipatcher if it hasn't been explicitly set with the setCollectDispatcher() method.
+            if(this.collectDispatcher == null) {
+                this.collectDispatcher = new CollectDispatcher(CollectDispatcher.DEFAULT_URL, libraryContext, timeout);
+            }
+
+            return new Tealium(libraryContext, this.collectDispatcher, this.persistentData, this.timeout);
         }
 
         public Builder setLogLevel(LogLevel level) {
@@ -103,6 +137,16 @@ public final class Tealium {
                 throw new IllegalArgumentException("Invalid datasource.");
             }
             this.datasource = datasource;
+            return this;
+        }
+
+        public Builder setCollectDispatcher(CollectDispatcher collectDispatcher) {
+            this.collectDispatcher = collectDispatcher;
+            return this;
+        }
+
+        public Builder setPersistentData(PersistentUdo persistentData) {
+            this.persistentData = persistentData;
             return this;
         }
 
@@ -148,7 +192,7 @@ public final class Tealium {
     }
 
     public DataManager getDataManager() {
-        return this.data;
+        return this.dataManager;
     }
 
     public String getProfile() {
@@ -175,34 +219,69 @@ public final class Tealium {
 
     /**
      * Convenient tracking event with optional data.
-     * 
+     *
      * @param eventTitle
      *            Required title of event.
-     * @param data
+     * @param eventData
+     *            Optional udo of additional data to pass with call. Values
+     *            should be Strings or Array of Strings.
+     */
+    public void track(String eventTitle, Udo eventData) {
+        track(eventTitle, eventData, null);
+    }
+
+    /**
+     * Convenient tracking event with optional data.
+     *
+     * @deprecated
+     *            Use the implementation of track that accepts a Udo type for event data, instead of the ambiguous
+     *            Map<String, ?> argument this one takes.
+     * @param eventTitle
+     *            Required title of event.
+     * @param eventData
      *            Optional map of additional data to pass with call. Values
      *            should be Strings or Array of Strings.
      */
-    public void track(String eventTitle, Map<String, ?> data) {
-        track(eventTitle, data, null);
+    public void track(String eventTitle, Map<String, ?> eventData) {
+        track(eventTitle, eventData == null ? null : new Udo(eventData), null);
     }
 
     /**
      * Convenient Track method for activities.
-     * 
+     *
      * @param eventTitle
      *            Required title of event.
-     * @param data
+     * @param eventData
+     *            Optional udo of additional data to pass with call. Values
+     *            should be Strings or Array of Strings.
+     * @param callback
+     *            Object conforming to the CollectCallback interface.
+     */
+    public void track(String eventTitle, Udo eventData, Tealium.DispatchCallback callback) {
+
+        track(EventType.ACTIVITY, eventTitle, eventData, callback);
+    }
+
+    /**
+     * Convenient Track method for activities.
+     *
+     * @deprecated
+     *            Use the implementation of track that accepts a Udo type for event data, instead of the ambiguous
+     *            Map<String, ?> argument this one takes.
+     * @param eventTitle
+     *            Required title of event.
+     * @param eventData
      *            Optional map of additional data to pass with call. Values
      *            should be Strings or Array of Strings.
      * @param callback
      *            Object conforming to the CollectCallback interface.
      */
-    public void track(String eventTitle, Map<String, ?> data, Tealium.DispatchCallback callback) {
+    public void track(String eventTitle, Map<String, ?> eventData, Tealium.DispatchCallback callback) {
 
-        track(EventType.ACTIVITY, eventTitle, data, callback);
+        track(eventTitle, eventData == null ? null : new Udo(eventData), callback);
     }
 
-        /**
+    /**
      * Primary Track method.
      * 
      * @param eventType
@@ -210,67 +289,75 @@ public final class Tealium {
      *            to ACTIVITY if nil.
      * @param eventTitle
      *            Required title of event.
-     * @param data
-     *            Optional map of additional data to pass with call. Values
+     * @param eventData
+     *            Optional udo of additional data to pass with call. Values
      *            should be Strings or Array of Strings.
      * @param callback
      *            Object conforming to the CollectCallback interface.
      */
-    public void track(String eventType, String eventTitle, Map<String, ?> data, Tealium.DispatchCallback callback) {
+    public void track(String eventType, String eventTitle, Udo eventData, Tealium.DispatchCallback callback) {
 
-        Map<String, Object> contextData = this.data.getPersistentData();
+        Udo payloadData = this.dataManager.getPersistentData();
 
         if (eventType == null) {
             eventType = EventType.ACTIVITY;
         }
-        contextData.put(Key.TEALIUM_EVENT_TYPE, eventType);
+        payloadData.put(Key.TEALIUM_EVENT_TYPE, eventType);
 
         if (eventTitle != null) {
             //Legacy - will be deprecated
-            contextData.put(Key.EVENT_NAME, eventTitle);
-            contextData.put(Key.TEALIUM_EVENT, eventTitle);
+            payloadData.put(Key.EVENT_NAME, eventTitle);
+            payloadData.put(Key.TEALIUM_EVENT, eventTitle);
         }
         
         if (this.getDatasource() != null) {
-        	contextData.put(Key.TEALIUM_DATASOURCE, this.getDatasource());
+        	payloadData.put(Key.TEALIUM_DATASOURCE, this.getDatasource());
         }
         
-        contextData.putAll(this.data.getVolatileData());
-        if (data != null) {
-            contextData.putAll(Util.copySanitized(data));
+        payloadData.putAll(this.dataManager.getVolatileData());
+
+        if (eventData != null) {
+            payloadData.putAll(new Udo(eventData));
         }
 
         try {
-            this.collect.dispatch(contextData, callback);
-        } catch (IOException e) {
+            this.collectDispatcher.dispatch(payloadData, callback);
+        } catch (CollectDispatchException e) {
             this.libraryContext.getLogger().log(e, LogLevel.ERRORS);
         }
     }
 
     /**
-     * Convenient basic track method for failed dispatches. Method used as a
-     * re-try
+     * Primary Track method.
      *
-     * @deprecated use {@link #track(String, Map, DispatchCallback)} ()} instead.
-     *
-     * @param encodedUrl
-     *            Encoded URL string returned from failed dispatch callback
+     * @deprecated
+     *            Use the implementation of track that accepts a Udo type for event data, instead of the ambiguous
+     *            Map<String, ?> argument this one takes.
+     * @param eventType
+     *            Optional track type (VIEW, ACTIVITY, INTERACTION, DERIVED, CONVERSION). Defaults
+     *            to ACTIVITY if nil.
+     * @param eventTitle
+     *            Required title of event.
+     * @param eventData
+     *            Optional map of additional data to pass with call. Values
+     *            should be Strings or Array of Strings.
+     * @param callback
+     *            Object conforming to the CollectCallback interface.
      */
-    @Deprecated
-    public void track(String encodedUrl, Tealium.DispatchCallback callback) throws IOException {
-        // No longer supported
+    public void track(String eventType, String eventTitle, Map<String, ?> eventData, Tealium.DispatchCallback callback) {
+        this.track(eventType, eventTitle, eventData == null ? null : new Udo(eventData), callback);
     }
 
     // =========================================================================
     // PRIVATE
     // =========================================================================
 
-    private Tealium(LibraryContext libraryContext, int timeout) {
+    private Tealium(LibraryContext libraryContext, CollectDispatcher collectDispatcher, PersistentUdo persistentData, int timeout) {
         super();
         this.libraryContext = libraryContext;
-        this.data = new DataManager(this.libraryContext);
+        this.dataManager = new DataManager(this.libraryContext, persistentData);
         // Is the URL in the constructor future proofing?
-        this.collect = new CollectDispatchService(CollectDispatchService.DEFAULT_URL, this.libraryContext, timeout);
+        this.collectDispatcher = collectDispatcher;
     }
 
 }

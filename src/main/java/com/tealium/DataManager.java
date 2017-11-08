@@ -1,29 +1,23 @@
 package com.tealium;
 
-import java.io.File;
-import java.io.IOException;
 import java.security.SecureRandom;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Random;
-import java.util.UUID;
 
 /**
  * Tealium data manager object for processing generation of standardized
  * universal data points.
  *
- * @author Jason Koo, Chad Hartman, Karen Tamayo, Merritt Tidwell
+ * @author Jason Koo, Chad Hartman, Karen Tamayo, Merritt Tidwell, Chris Anderberg
  */
 public final class DataManager {
-
-    private static final int DEFAULT_BASELINE_SIZE = 5;
     private static final long RANDOM_MAX_PLUS_ONE = 10000000000000000L;
 
-    private final LibraryContext context;
+    private final LibraryContext libraryContext;
     private final Random randomGenerator;
-    private final Map<String, Object> volatileData;
+    private final Udo volatileData;
     private String sessionId;
-    private Map<String, Object> persistentCache;
+    private PersistentUdo persistentData = null;
+    private Udo persistentCache; // use this instead of reading from storage all the time
 
     // =========================================================================
     // PUBLIC
@@ -32,25 +26,20 @@ public final class DataManager {
     /**
      * Constructor for new DataManager Object
      */
-    public DataManager(LibraryContext libraryContext) {
+    public DataManager(LibraryContext libraryContext, PersistentUdo persistentData) {
         super();
-        this.context = libraryContext;
+        this.libraryContext = libraryContext;
         this.sessionId = getTimestampInMilliseconds();
         this.randomGenerator = new SecureRandom();
-        this.volatileData = new HashMap<String, Object>(DEFAULT_BASELINE_SIZE);
+        this.volatileData = new Udo();
+        this.persistentData = persistentData;
 
         try {
-            final File file = FileUtils.getPersistentFile(this.context);
-            if (file.exists()) {
-                this.persistentCache = FileUtils.readMap(file);
-            } else {
-                this.persistentCache = createNewPersistentData();
-                FileUtils.writeMap(file, this.persistentCache);
-            }
-        } catch (IOException e) {
+            this.persistentCache = this.persistentData.readOrCreateUdo(this.createNewPersistentData());
+        } catch (UdoSerializationException e) {
             // File must be corrupt/unreadable etc
-            this.persistentCache = new HashMap<>();
-            this.context.getLogger().log(e, LogLevel.ERRORS);
+            this.persistentCache = new Udo(); // persistent cache is empty when something goes wrong.
+            this.libraryContext.getLogger().log(e, LogLevel.ERRORS);
         }
     }
 
@@ -60,7 +49,7 @@ public final class DataManager {
      * @return sessionId
      */
     public String getSessionId() {
-        return sessionId;
+        return this.sessionId;
     }
 
     /**
@@ -68,22 +57,21 @@ public final class DataManager {
      * 
      * @return persistent data map
      */
-    public Map<String, Object> getPersistentData() {
+    public Udo getPersistentData() {
         return this.persistentCache;
-
     }
 
     /**
      * Convenience to add to persistent data map
      * 
-     * @param string
-     *            array
-     * @throws IOException
+     * @param data
+     *
+     * @throws PersistentDataAccessException
      */
-    public void addPersistentData(Map<String, Object> data) throws IOException {
-        Map<String, Object> persistent = getPersistentData();
+    public void addPersistentData(Udo data) throws UdoSerializationException {
+        Udo persistent = getPersistentData();
         persistent.putAll(data);
-        FileUtils.writeMap(FileUtils.getPersistentFile(this.context), persistent);
+        this.persistentData.writeData(persistent);
     }
 
     /**
@@ -91,17 +79,15 @@ public final class DataManager {
      * 
      */
     public String resetSessionId() {
-        String sessionId = getTimestampInMilliseconds();
-        this.sessionId = sessionId;
-        return sessionId;
-
+        this.sessionId = getTimestampInMilliseconds();
+        return this.sessionId;
     }
 
     // =========================================================================
     // PROTECTED
     // =========================================================================
 
-    protected Map<String, Object> getVolatileData() {
+    protected Udo getVolatileData() {
         volatileData.put(Key.TEALIUM_TIMESTAMP_EPOCH, getTimestampInSeconds());
         volatileData.put(Key.TEALIUM_RANDOM, getRandom());
         volatileData.put(Key.TEALIUM_SESSION_ID, getSessionId());
@@ -112,20 +98,16 @@ public final class DataManager {
     // PRIVATE
     // =========================================================================
 
-    private Map<String, Object> createNewPersistentData() {
-        Map<String, Object> data = new HashMap<>();
+    private Udo createNewPersistentData() {
+        Udo data = new Udo();
         data.put(Key.TEALIUM_LIBRARY_NAME, "java");
-        data.put(Key.TEALIUM_LIBRARY_VERSION, "1.2.0");
-        data.put(Key.TEALIUM_ACCOUNT, this.context.getAccount());
-        data.put(Key.TEALIUM_PROFILE, this.context.getProfile());
-        if(this.context.getEnvironment() != null)
-        	data.put(Key.TEALIUM_ENVIRONMENT, this.context.getEnvironment());
-        if(this.context.getDatasource() != null)
-        	data.put(Key.TEALIUM_DATASOURCE, this.context.getDatasource());
-        String vid = createNewVisitorId();
-        // NOTE Migratory vids
-        data.put(Key.TEALIUM_VISITOR_ID, vid);
-        data.put("tealium_vid", vid);
+        data.put(Key.TEALIUM_LIBRARY_VERSION, LibraryContext.version);
+        data.put(Key.TEALIUM_ACCOUNT, this.libraryContext.getAccount());
+        data.put(Key.TEALIUM_PROFILE, this.libraryContext.getProfile());
+        if(this.libraryContext.getEnvironment() != null)
+        	data.put(Key.TEALIUM_ENVIRONMENT, this.libraryContext.getEnvironment());
+        if(this.libraryContext.getDatasource() != null)
+        	data.put(Key.TEALIUM_DATASOURCE, this.libraryContext.getDatasource());
         return data;
     }
 
@@ -137,11 +119,6 @@ public final class DataManager {
         return String.valueOf(System.currentTimeMillis());
     }
 
-    private String createNewVisitorId() {
-        final String uuid = UUID.randomUUID().toString().replaceAll("-", "");
-        return uuid;
-    }
-
     private String getRandom() {
         long randomNumber = randomGenerator.nextLong() % RANDOM_MAX_PLUS_ONE;
         String stringRandom = String.format("%016d", Math.abs(randomNumber));
@@ -149,8 +126,7 @@ public final class DataManager {
     }
 
     public static class Key {
-        private Key() {
-        }
+        private Key() {}
 
         public static final String EVENT_NAME = "event_name";
         public static final String TEALIUM_ACCOUNT = "tealium_account";
@@ -169,8 +145,7 @@ public final class DataManager {
     }
 
     public static class EventType {
-        private EventType() {
-        }
+        private EventType() {}
 
         public static final String ACTIVITY = "activity";
         public static final String CONVERSION = "conversion";
@@ -181,8 +156,8 @@ public final class DataManager {
     }
 
     public static class InfoKey {
-        private InfoKey() {
-        }
+        private InfoKey() {}
+
         public static final String DISPATCH_SERVICE = "dispatch_service";
         public static final String ENCODED_URL = "encoded_url";
         public static final String RESPONSE_HEADERS = "response_headers";
