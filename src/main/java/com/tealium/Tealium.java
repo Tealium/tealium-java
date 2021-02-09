@@ -297,7 +297,9 @@ public final class Tealium {
      */
     public void track(String eventType, String eventTitle, Udo eventData, Tealium.DispatchCallback callback) {
 
-        Udo payloadData = this.dataManager.getPersistentData();
+        Udo payloadData = new Udo();
+
+        payloadData.putAll(this.dataManager.getPersistentData());
 
         if (eventType == null) {
             eventType = EventType.ACTIVITY;
