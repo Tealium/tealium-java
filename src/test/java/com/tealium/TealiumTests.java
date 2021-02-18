@@ -1,7 +1,6 @@
 package com.tealium;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertFalse;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -10,6 +9,8 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
 import com.tealium.Tealium.DispatchCallback;
+
+import static org.junit.Assert.*;
 
 /**
  * Test logic related to Tealium
@@ -34,7 +35,7 @@ public class TealiumTests {
     @Test
     public void testTrackCallContainsCorrectData() throws InterruptedException {
 
-        // create a fake persistent data that just returns the defualt data
+        // create a fake persistent data that just returns the default data
         PersistentUdo persistentUdoFake = new PersistentUdo(null) {
             @Override
             public Udo readOrCreateUdo(Udo defaultData) {
@@ -87,6 +88,37 @@ public class TealiumTests {
                 .build();
 
         tealium.track("test", null, callBack);
+        barrier.await(1, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testTrackCallPayloadAndPersistentDataAreNotSame() throws InterruptedException {
+
+        final CountDownLatch barrier = new CountDownLatch(3);
+        Udo event = new Udo();
+        event.put("event_data", "event_value");
+
+        final Tealium tealium = new Tealium.Builder("tealiummobile", "demo")
+                .setEnvironment("env")
+                .setDatasource("datasource")
+                .build();
+
+        DispatchCallback callBack = new DispatchCallback() {
+            @Override
+            public void dispatchComplete(boolean success, Map<String, Object> info, String error) {
+
+                Udo payload = (Udo) info.get("payload");
+
+                Udo persistentData = tealium.getDataManager().getPersistentData();
+                assertNotSame(payload, persistentData);
+                assertFalse(persistentData.containsKey("event_data"));
+
+                barrier.countDown();
+            }
+        };
+
+
+        tealium.track("test", event, callBack);
         barrier.await(1, TimeUnit.SECONDS);
     }
 

@@ -108,7 +108,7 @@ public final class Tealium {
                 this.persistentData = new PersistentUdo(new TextStorage(persistentFilePath));
             }
 
-            // set the collect dipatcher if it hasn't been explicitly set with the setCollectDispatcher() method.
+            // set the collect dispatcher if it hasn't been explicitly set with the setCollectDispatcher() method.
             if(this.collectDispatcher == null) {
                 this.collectDispatcher = new CollectDispatcher(CollectDispatcher.DEFAULT_URL, libraryContext, timeout);
             }
@@ -297,7 +297,7 @@ public final class Tealium {
      */
     public void track(String eventType, String eventTitle, Udo eventData, Tealium.DispatchCallback callback) {
 
-        Udo payloadData = this.dataManager.getPersistentData();
+        Udo payloadData = new Udo(this.dataManager.getPersistentData());
 
         if (eventType == null) {
             eventType = EventType.ACTIVITY;
