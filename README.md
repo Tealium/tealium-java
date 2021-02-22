@@ -17,7 +17,7 @@ AudienceStream™ allows you to create a unified view of your customers, correla
 
 ## How To Get Started
 
-* Check out the [Getting Started](https://community.tealiumiq.com/t5/Mobile-Libraries/Tealium-for-Java/ta-p/15325) guide for a step by step walkthrough of adding Tealium to an existing project.  
+* Check out the [Getting Started](https://docs.tealium.com/platforms/java/install/) guide for a step by step walkthrough of adding Tealium to an existing project.  
 * There are many other useful articles at the [Tealium Learning Community](https://community.tealiumiq.com).
 
 ## Contact Us
@@ -27,6 +27,8 @@ AudienceStream™ allows you to create a unified view of your customers, correla
 * If you have **account specific questions** please contact your Tealium account manager
 
 ## Change Log
+- 1.3.1 Persistent Data 
+    - Updated track method to use a copy of Persistent Data to stop event data unexpectedly being stored. 
 - 1.3.0 Remove visitor_id and switch to event endpoint
     - "tealium_visitor_id" and "tealium_vid" removed
     - Use the "event" endpoint using the POST method with json
@@ -72,4 +74,4 @@ Use of this software is subject to the terms and conditions of the license agree
 
 
 ---
-Copyright (C) 2012-2017, Tealium Inc.
+Copyright (C) 2012-2021, Tealium Inc.
