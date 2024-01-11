@@ -15,7 +15,6 @@ import static org.junit.Assert.*;
  * Jason Koo, Chad Hartman, Karen Tamayo, Merritt Tidwell, Chris Anderberg
  */
 public class DataManagerTests {
-
     @Test
     public void testInit() throws Exception {
         TestLibraryContext testCtx = TestLibraryContext.newInstance();
@@ -49,6 +48,23 @@ public class DataManagerTests {
 
         LibraryContext ctx = TestLibraryContext.newInstance();
 
+        Udo map = new Udo();
+        String key = "testKey";
+        String value = "testValue";
+        map.put(key, value);
+
+        DataManager data = new DataManager(ctx, TestUtils.dummyPersistentUdo(map));
+        Udo savedData = data.getPersistentData();
+
+        assertTrue(savedData.containsKey(key));
+        assertTrue(savedData.containsValue(value));
+    }
+
+    @Test
+    public void testAddPersistentDataAddsDataToPersistentUdo() throws Exception {
+
+        LibraryContext ctx = TestLibraryContext.newInstance();
+
         DataManager data = new DataManager(ctx, TestUtils.dummyPersistentUdo());
         Udo map = new Udo();
 
@@ -60,15 +76,28 @@ public class DataManagerTests {
         // Write to disk first
         data.addPersistentData(map);
 
-        Class<? extends DataManager> myclass = data.getClass();
-        Method method = myclass.getDeclaredMethod("getPersistentData");
-        method.setAccessible(true);
-
-        @SuppressWarnings("unchecked")
-        Udo savedData = (Udo) method.invoke(data);
+        Udo savedData = data.getPersistentData();
 
         assertTrue(savedData.containsKey(key));
         assertTrue(savedData.containsValue(value));
+    }
+
+    @Test
+    public void testDeletePersistentDataRemovesDataFromPersistentUdo() throws Exception {
+
+        LibraryContext ctx = TestLibraryContext.newInstance();
+
+        Udo map = new Udo();
+        String key = "testKey";
+        String value = "testValue";
+        map.put(key, value);
+
+        DataManager data = new DataManager(ctx, TestUtils.dummyPersistentUdo(map));
+        data.deletePersistentData(Collections.singletonList("testKey"));
+        Udo savedData = data.getPersistentData();
+
+        assertFalse(savedData.containsKey(key));
+        assertFalse(savedData.containsValue(value));
     }
 
     /*

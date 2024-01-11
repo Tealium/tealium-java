@@ -10,7 +10,7 @@ import java.util.Locale;
  * @author Jason Koo, Chad Hartman, Karen Tamayo, Merritt Tidwell, Chris Anderberg
  */
 class LibraryContext {
-    public static final String version = "1.3.1";
+    public static final String version = "1.3.2";
 
     private final String account;
     private final String profile;
