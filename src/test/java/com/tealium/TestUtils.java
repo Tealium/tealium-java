@@ -71,8 +71,12 @@ public class TestUtils {
     }
 
     public static PersistentUdo dummyPersistentUdo() {
+        return dummyPersistentUdo(null);
+    }
+
+    public static PersistentUdo dummyPersistentUdo(final Udo initialUdo) {
         return new PersistentUdo(null) {
-            private Udo udo;
+            private Udo udo = initialUdo;
 
             @Override
             public Udo readOrCreateUdo(Udo defaultData) {

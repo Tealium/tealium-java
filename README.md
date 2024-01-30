@@ -27,6 +27,9 @@ AudienceStream™ allows you to create a unified view of your customers, correla
 * If you have **account specific questions** please contact your Tealium account manager
 
 ## Change Log
+
+- 1.3.2 Persistent Data Deletion
+    - `deletePersistentData` method added to the `DataManager` class  
 - 1.3.1 Persistent Data 
     - Updated track method to use a copy of Persistent Data to stop event data unexpectedly being stored. 
 - 1.3.0 Remove visitor_id and switch to event endpoint
@@ -74,4 +77,4 @@ Use of this software is subject to the terms and conditions of the license agree
 
 
 ---
-Copyright (C) 2012-2021, Tealium Inc.
+Copyright (C) 2012-2024, Tealium Inc.

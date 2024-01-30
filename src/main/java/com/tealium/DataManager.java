@@ -1,6 +1,7 @@
 package com.tealium;
 
 import java.security.SecureRandom;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -71,6 +72,19 @@ public final class DataManager {
     public void addPersistentData(Udo data) throws UdoSerializationException {
         Udo persistent = getPersistentData();
         persistent.putAll(data);
+        this.persistentData.writeData(persistent);
+    }
+
+    /**
+     * Convenience to remove specific keys from the persistent data map
+     *
+     * @param keys The list of keys to be removed.
+     */
+    public void deletePersistentData(List<String> keys) throws UdoSerializationException {
+        Udo persistent = getPersistentData();
+        for (String key : keys) {
+            persistent.remove(key);
+        }
         this.persistentData.writeData(persistent);
     }
 
