@@ -1,6 +1,5 @@
 package com.tealium;
 
-import javax.xml.ws.http.HTTPException;
 import java.util.List;
 import java.util.Map;
 
@@ -9,7 +8,9 @@ import java.util.Map;
  *
  * @author Jason Koo, Chad Hartman, Karen Tamayo, Merritt Tidwell, Chris Anderberg
  */
-class FailedRequestException extends HTTPException {
+class FailedRequestException extends RuntimeException {
+
+    private final int statusCode;
 
     public Map<String, List<String>> headers;
     public String customMessage;
@@ -18,11 +19,16 @@ class FailedRequestException extends HTTPException {
         return customMessage;
     }
 
-    public FailedRequestException(int responseCode) { super(responseCode); }
+    public int getStatusCode() {
+        return statusCode;
+    }
 
-    public FailedRequestException(int responseCode, String message, Map<String, List<String>> headers) {
+    public FailedRequestException(int statusCode) {
+        this.statusCode = statusCode;
+    }
 
-        super(responseCode);
+    public FailedRequestException(int statusCode, String message, Map<String, List<String>> headers) {
+        this.statusCode = statusCode;
         this.customMessage = message;
         this.headers = headers;
     }
