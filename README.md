@@ -28,6 +28,8 @@ AudienceStream™ allows you to create a unified view of your customers, correla
 
 ## Change Log
 
+- 1.4.0 JDK 9+ Support
+    - Removed unnecessary reference to `javax.xml.ws.http.HTTPException` to support newer JDKs without additional dependencies.
 - 1.3.2 Persistent Data Deletion
     - `deletePersistentData` method added to the `DataManager` class  
 - 1.3.1 Persistent Data 
