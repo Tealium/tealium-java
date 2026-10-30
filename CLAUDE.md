@@ -29,7 +29,7 @@ No lint, checkstyle, or static-analysis tooling is configured.
 
 ## Architecture
 
-Everything lives in the single package `com.tealium`. `Tealium` and `Udo` are the public API; the rest are package-private.
+Everything lives in the single package `com.tealium`. `Tealium` and `Udo` are the main public entry points; additional public types include `DataManager`, `TextStorage`, `LogLevel`, and several exception classes.
 
 Data flow for `Tealium.track(eventType, title, Udo data, DispatchCallback)`:
 
