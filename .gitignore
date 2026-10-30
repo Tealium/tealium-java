@@ -6,3 +6,5 @@ out/
 /target/
 bin/
 *.iml
+.gradle/
+/build/
