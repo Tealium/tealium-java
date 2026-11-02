@@ -35,6 +35,8 @@ publishing {
         maven {
             name = "tealium"
             url = uri("s3://maven.tealiumiq.com/java/releases/")
+            // Gradle resolves these from the properties tealiumAccessKey, tealiumSecretKey,
+            // and optionally tealiumSessionToken (e.g. in ~/.gradle/gradle.properties).
             credentials(AwsCredentials::class)
         }
     }

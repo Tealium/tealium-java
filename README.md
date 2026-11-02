@@ -36,6 +36,15 @@ Building requires JDK 17+; the library itself is compiled to Java 8 bytecode. Te
 ./gradlew publishToMavenLocal       # install into ~/.m2
 ```
 
+Publishing to the Tealium S3 repository (`./gradlew publish`) needs AWS credentials supplied as Gradle properties, e.g. in `~/.gradle/gradle.properties`:
+
+```properties
+tealiumAccessKey=...
+tealiumSecretKey=...
+# optional, for temporary credentials
+tealiumSessionToken=...
+```
+
 ## Change Log
 
 - 1.4.0 JDK 9+ Support

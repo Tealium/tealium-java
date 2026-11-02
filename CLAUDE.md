@@ -24,7 +24,7 @@ No lint, checkstyle, or static-analysis tooling is configured.
 ## Compatibility constraints
 
 - `build.gradle.kts` sets `options.release = 8` on `JavaCompile`, which produces Java 8 bytecode and has `javac` enforce the Java 8 API surface (no APIs added after Java 8). Building itself requires JDK 17+, since that's what runs Gradle.
-- The library must also run on modern JDKs (9+). Don't use APIs removed from later JDKs. 1.4.0 removed a `javax.xml.ws.http.HTTPException` reference for exactly this reason.
+- The library runs on JDK 8 and later. Don't use APIs that later JDKs removed (e.g. the Java EE modules dropped in JDK 9/11). 1.4.0 removed a `javax.xml.ws.http.HTTPException` reference for exactly this reason.
 - `LibraryContext.version` (sent as `tealium_library_version`) is hard-coded separately from `build.gradle.kts`. Bump both on release, and add a "Change Log" entry in `README.md`.
 
 ## Architecture
