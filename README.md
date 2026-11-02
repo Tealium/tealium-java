@@ -26,6 +26,25 @@ AudienceStream™ allows you to create a unified view of your customers, correla
 * If you have **general questions** or want to network with other users please visit the [Tealium Learning Community](https://community.tealiumiq.com)
 * If you have **account specific questions** please contact your Tealium account manager
 
+## Building from source
+
+Building requires JDK 17+; the library itself is compiled to Java 8 bytecode. Tests currently require network access (they make real HTTP calls to `collect.tealiumiq.com`).
+
+```bash
+./gradlew build                     # build jar and run tests
+./gradlew test                      # run tests only
+./gradlew publishToMavenLocal       # install into ~/.m2
+```
+
+Publishing to the Tealium S3 repository (`./gradlew publish`) needs AWS credentials supplied as Gradle properties, e.g. in `~/.gradle/gradle.properties`:
+
+```properties
+tealiumAccessKey=...
+tealiumSecretKey=...
+# optional, for temporary credentials
+tealiumSessionToken=...
+```
+
 ## Change Log
 
 - 1.4.0 JDK 9+ Support
