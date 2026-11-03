@@ -11,18 +11,10 @@ import java.util.Map;
  */
 class FailedRequestException extends RuntimeException {
 
-    private final int statusCode;
+    public final int statusCode;
 
     public Map<String, List<String>> headers;
     public String customMessage;
-
-    public String getCustomMessage() {
-        return customMessage;
-    }
-
-    public int getStatusCode() {
-        return statusCode;
-    }
 
     public FailedRequestException(int statusCode) {
         this.statusCode = statusCode;

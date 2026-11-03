@@ -42,7 +42,7 @@ final class Logger {
             return message;
         }
         return null;
-    };
+    }
 
     public void log(Throwable t, LogLevel level) {
         if (isLogging(level)) {

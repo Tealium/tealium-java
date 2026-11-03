@@ -23,13 +23,13 @@ import java.util.*;
  * @author Jason Koo, Chad Hartman, Karen Tamayo, Merritt Tidwell, Chris Anderberg
  */
 public class Udo implements Map<String, Object> {
-    private Map<String, Object> wrappedMap;
+    private final Map<String, Object> wrappedMap;
 
     /**
      * Construct an empty udo
      */
     public Udo() {
-        this.wrappedMap = new HashMap<String, Object>();
+        this.wrappedMap = new HashMap<>();
     }
 
     /**
@@ -37,8 +37,8 @@ public class Udo implements Map<String, Object> {
      *
      * @param data A map of names to values representing udo variables
      */
-    public Udo(Map<String, ? extends Object> data) {
-        this.wrappedMap = new HashMap<String, Object>();
+    public Udo(Map<String, ?> data) {
+        this.wrappedMap = new HashMap<>();
         this.putAll(data);
     }
 
@@ -186,12 +186,12 @@ public class Udo implements Map<String, Object> {
      * @see Map
      */
     @Override
-    public void putAll(Map<? extends String, ? extends Object> m) {
-        for (Map.Entry<? extends String, ? extends Object> entry : m.entrySet()) {
+    public void putAll(Map<? extends String, ?> m) {
+        for (Map.Entry<? extends String, ?> entry : m.entrySet()) {
             final String key = entry.getKey();
             final Object value = entry.getValue();
 
-            if ((value == null) || (key == null) || (key.length() == 0)) {
+            if ((value == null) || (key == null) || (key.isEmpty())) {
                 continue;
             }
 
@@ -237,18 +237,6 @@ public class Udo implements Map<String, Object> {
     }
 
     /**
-     * Get the map that this udo wraps under the hood.
-     * Using it can circumvent the logic this class is meant to provide.
-     * If it's needed for anything besides testing,
-     * refactoring is probably needed.
-     *
-     * @return the wrapped map
-     */
-    private Map<String, Object> getWrappedMap() {
-        return this.wrappedMap;
-    }
-
-    /**
      * @param source
      *            The object to be copied into a String array of non-null
      *            values.
@@ -277,8 +265,8 @@ public class Udo implements Map<String, Object> {
         int count = 0;
 
         Object value;
-        for (Iterator<?> i = collection.iterator(); i.hasNext();) {
-            if ((value = i.next()) != null) {
+        for (Object o : collection) {
+            if ((value = o) != null) {
                 array[count++] = value.toString();
             }
         }
@@ -361,7 +349,7 @@ public class Udo implements Map<String, Object> {
 
         for (String pair : persistentText.split("&")) {
 
-            if (pair.length() == 0) {
+            if (pair.isEmpty()) {
                 continue;
             }
 

@@ -59,7 +59,7 @@ public final class Tealium {
          * @param str The string to check
          * @return true if the string is either null or empty
          */
-        private static boolean stringIsNullOrEmpty(String str) {return str == null || str.length() == 0;}
+        private static boolean stringIsNullOrEmpty(String str) {return str == null || str.isEmpty();}
         
         /**
          * Constructor for a new Builder, used to configure and construct a Tealium instance.
@@ -79,9 +79,9 @@ public final class Tealium {
          */
         @Deprecated
         public Builder(String account, String profile, String environment) {
-            if ((account == null) || (account.length() == 0)
-                    || (profile == null) || (profile.length() == 0)
-                    || (environment == null) || (environment.length() == 0)) {
+            if ((account == null) || (account.isEmpty())
+                    || (profile == null) || (profile.isEmpty())
+                    || (environment == null) || (environment.isEmpty())) {
                 throw new IllegalArgumentException("Account, profile, & environment must not be empty.");
             }
 
@@ -113,7 +113,7 @@ public final class Tealium {
                 this.collectDispatcher = new CollectDispatcher(CollectDispatcher.DEFAULT_URL, libraryContext, timeout);
             }
 
-            return new Tealium(libraryContext, this.collectDispatcher, this.persistentData, this.timeout);
+            return new Tealium(libraryContext, this.collectDispatcher, this.persistentData);
         }
 
         public Builder setLogLevel(LogLevel level) {
@@ -140,11 +140,29 @@ public final class Tealium {
             return this;
         }
 
+        /**
+         * @deprecated Internal testing hook. {@code CollectDispatcher} isn't public, so callers outside the library
+         *             can only pass null, which has no effect. This method will be made package-private in a
+         *             future release.
+         *
+         * @param collectDispatcher The dispatcher to use instead of the default, or null to use the default
+         * @return This builder
+         */
+        @Deprecated
         public Builder setCollectDispatcher(CollectDispatcher collectDispatcher) {
             this.collectDispatcher = collectDispatcher;
             return this;
         }
 
+        /**
+         * @deprecated Internal testing hook. {@code PersistentUdo} isn't public, so callers outside the library
+         *             can only pass null, which has no effect. This method will be made package-private in a
+         *             future release.
+         *
+         * @param persistentData The persistent data store to use instead of the default, or null to use the default
+         * @return This builder
+         */
+        @Deprecated
         public Builder setPersistentData(PersistentUdo persistentData) {
             this.persistentData = persistentData;
             return this;
@@ -180,7 +198,7 @@ public final class Tealium {
          * @param error
          *            null if the dispatch succeeded, otherwise a string describing what went wrong.
          */
-        public void dispatchComplete(boolean success, Map<String, Object> info, String error);
+        void dispatchComplete(boolean success, Map<String, Object> info, String error);
     }
 
     // =========================================================================
@@ -352,12 +370,10 @@ public final class Tealium {
     // PRIVATE
     // =========================================================================
 
-    private Tealium(LibraryContext libraryContext, CollectDispatcher collectDispatcher, PersistentUdo persistentData, int timeout) {
+    private Tealium(LibraryContext libraryContext, CollectDispatcher collectDispatcher, PersistentUdo persistentData) {
         super();
         this.libraryContext = libraryContext;
         this.dataManager = new DataManager(this.libraryContext, persistentData);
-        // Is the URL in the constructor future proofing?
         this.collectDispatcher = collectDispatcher;
     }
-
 }

@@ -26,7 +26,7 @@ final class CollectDispatcher {
     public final static String DEFAULT_URL = "https://collect.tealiumiq.com/event";
 
     private final String endpoint;
-    private final Logger logger;
+    private final Logger logger; // TODO: use or remove
     private final int timeout;
 
     // =========================================================================

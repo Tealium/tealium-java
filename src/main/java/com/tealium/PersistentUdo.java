@@ -9,7 +9,7 @@ import java.io.IOException;
  */
 class PersistentUdo {
 
-    private TextStorage textStorage;
+    private final TextStorage textStorage;
 
     public PersistentUdo(TextStorage textStorage) {
         this.textStorage = textStorage;

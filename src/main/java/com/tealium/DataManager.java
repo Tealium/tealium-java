@@ -17,7 +17,7 @@ public final class DataManager {
     private final Random randomGenerator;
     private final Udo volatileData;
     private String sessionId;
-    private PersistentUdo persistentData = null;
+    private final PersistentUdo persistentData;
     private Udo persistentCache; // use this instead of reading from storage all the time
 
     // =========================================================================
@@ -30,7 +30,7 @@ public final class DataManager {
      * @param libraryContext Library context providing the account/profile/environment/datasource and logger.
      * @param persistentData The persistent udo store to read from and write to.
      */
-    public DataManager(LibraryContext libraryContext, PersistentUdo persistentData) {
+    DataManager(LibraryContext libraryContext, PersistentUdo persistentData) {
         super();
         this.libraryContext = libraryContext;
         this.sessionId = getTimestampInMilliseconds();
@@ -106,7 +106,7 @@ public final class DataManager {
     // PROTECTED
     // =========================================================================
 
-    protected Udo getVolatileData() {
+    Udo getVolatileData() {
         volatileData.put(Key.TEALIUM_TIMESTAMP_EPOCH, getTimestampInSeconds());
         volatileData.put(Key.TEALIUM_RANDOM, getRandom());
         volatileData.put(Key.TEALIUM_SESSION_ID, getSessionId());
@@ -140,8 +140,7 @@ public final class DataManager {
 
     private String getRandom() {
         long randomNumber = randomGenerator.nextLong() % RANDOM_MAX_PLUS_ONE;
-        String stringRandom = String.format("%016d", Math.abs(randomNumber));
-        return stringRandom;
+        return String.format("%016d", Math.abs(randomNumber));
     }
 
     public static class Key {
