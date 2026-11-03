@@ -25,7 +25,7 @@ No lint, checkstyle, or static-analysis tooling is configured.
 
 - `build.gradle.kts` sets `options.release = 8` on `JavaCompile`, which produces Java 8 bytecode and has `javac` enforce the Java 8 API surface (no APIs added after Java 8). Building itself requires JDK 17+, since that's what runs Gradle.
 - The library runs on JDK 8 and later. Don't use APIs that later JDKs removed (e.g. the Java EE modules dropped in JDK 9/11). 1.4.0 removed a `javax.xml.ws.http.HTTPException` reference for exactly this reason.
-- `LibraryContext.version` (sent as `tealium_library_version`) is hard-coded separately from `build.gradle.kts`. Bump both on release, and add a "Change Log" entry in `README.md`.
+- `LibraryContext.version` (sent as `tealium_library_version`) is generated: the `generateBuildConfig` task in `build.gradle.kts` writes `com/tealium/BuildConfig.java` from the project's `version`, and `LibraryContext.version` reads `BuildConfig.VERSION`. A release only needs to bump `version` in `build.gradle.kts` plus add a "Change Log" entry in `README.md`.
 
 ## Architecture
 
@@ -46,4 +46,4 @@ Data flow for `Tealium.track(eventType, title, Udo data, DispatchCallback)`:
 
 ## Tests
 
-The tests live in `src/test/java/com/tealium/`, all in one flat directory. `TestUtils` provides in-memory `TextStorage`/`PersistentUdo` fakes and sample maps; `TestLibraryContext` builds contexts. Mockito is available but is currently used only in `PersistentUdoTests`.
+The tests live in `src/test/java/com/tealium/`, all in one flat directory. `TestUtils` provides in-memory `TextStorage`/`PersistentUdo` fakes and sample maps; `TestLibraryContext` builds contexts. Mockito is used in `PersistentUdoTests`; it's also wired as a Java agent (`mockitoAgent` configuration + `-javaagent` on `tasks.test`) to avoid JDK 21+'s "dynamically loaded agent" warning.
