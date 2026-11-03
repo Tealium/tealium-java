@@ -60,8 +60,6 @@ public final class ExampleApp {
                     return trackCommand(tealium, EventType.VIEW, subArgs);
                 case "persist":
                     return persistCommand(tealium, subArgs);
-                case "session":
-                    return sessionCommand(tealium, subArgs);
                 default:
                     System.err.println("Unknown command: " + subcommand);
                     printUsage(System.err);
@@ -160,27 +158,6 @@ public final class ExampleApp {
         }
     }
 
-    private static int sessionCommand(Tealium tealium, String[] args) {
-        if (args.length == 0) {
-            System.err.println("Expected a session subcommand: show or reset.");
-            printUsage(System.err);
-            return 2;
-        }
-
-        switch (args[0]) {
-            case "show":
-                System.out.println("session_id=" + tealium.getDataManager().getSessionId());
-                return 0;
-            case "reset":
-                System.out.println("session_id=" + tealium.getDataManager().resetSessionId());
-                return 0;
-            default:
-                System.err.println("Unknown session subcommand: " + args[0]);
-                printUsage(System.err);
-                return 2;
-        }
-    }
-
     // =========================================================================
     // HELPERS
     // =========================================================================
@@ -266,9 +243,7 @@ public final class ExampleApp {
         out.println("  persist show                    Print persistent data as JSON");
         out.println("  persist add key=value ...       Add persistent data");
         out.println("  persist delete key ...          Remove persistent data keys");
-        out.println("  session show                    Print the current session id");
-        out.println("  session reset                   Reset the session id");
-        out.println("  help                             Print this message");
+        out.println("  help                            Print this message");
     }
 
     // =========================================================================

@@ -16,8 +16,6 @@ From the repository root, using the root Gradle wrapper:
 ./gradlew -p example run --args="persist add user_id=123"
 ./gradlew -p example run --args="persist show"
 ./gradlew -p example run --args="persist delete user_id"
-./gradlew -p example run --args="session show"
-./gradlew -p example run --args="session reset"
 ```
 
 Global options go before the subcommand, e.g.:
@@ -39,7 +37,6 @@ Building only:
 - `persist show` — prints the current persistent data as JSON.
 - `persist add key=value ...` — adds/overwrites persistent data.
 - `persist delete key ...` — removes persistent data keys.
-- `session show` / `session reset` — prints or resets the session id.
 - `help` — prints usage (also printed, with exit code 2, on no args or bad args).
 
 A key passed more than once (e.g. `a=1 a=2`) is sent as a list value.
