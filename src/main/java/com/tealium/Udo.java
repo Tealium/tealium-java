@@ -15,8 +15,8 @@ import java.util.*;
  * either be a string, or a list of strings. Unfortunately the most
  * specific common superclass is Object, which makes it difficult to
  * represent the type of a udo using existing Java interfaces and types
- * alone. This class works by wrapping a Map<String, Object>, while
- * providing formatting logic. It implements the Map<String, Object>
+ * alone. This class works by wrapping a {@code Map<String, Object>}, while
+ * providing formatting logic. It implements the {@code Map<String, Object>}
  * interface for compatibility with parsing libraries (and other logic
  * that works on maps).
  *
@@ -44,7 +44,7 @@ public class Udo implements Map<String, Object> {
 
     /**
      * Clear this udo of data.
-     * Implements the Map<String, Object> interface.
+     * Implements the {@code Map<String, Object>} interface.
      *
      * @see Map
      */
@@ -55,9 +55,9 @@ public class Udo implements Map<String, Object> {
 
     /**
      * Returns true if this udo contains a variable name (the key).
-     * Implements the Map<String, Object> interface.
+     * Implements the {@code Map<String, Object>} interface.
      *
-     * @param key
+     * @param key The variable name to check for
      * @return true if the key exists, false otherwise
      * @see Map
      */
@@ -68,9 +68,9 @@ public class Udo implements Map<String, Object> {
 
     /**
      * Returns true if this udo contains a variable value.
-     * Implements the Map<String, Object> interface.
+     * Implements the {@code Map<String, Object>} interface.
      *
-     * @param value
+     * @param value The variable value to check for
      * @return true if the value is contained, false otherwise
      * @see Map
      */
@@ -81,7 +81,7 @@ public class Udo implements Map<String, Object> {
 
     /**
      * Returns the set of name/value pairs of the variables in this udo
-     * Implements the Map<String, Object> interface.
+     * Implements the {@code Map<String, Object>} interface.
      *
      * @return A set of name/value pairs of all the variables in this udo
      * @see Map
@@ -93,7 +93,7 @@ public class Udo implements Map<String, Object> {
 
     /**
      * Returns true if this udo is equal to some other object.
-     * Implements the Map<String, Object> interface.
+     * Implements the {@code Map<String, Object>} interface.
      *
      * @param o The other object to compare to
      * @return true if equal, false otherwise.
@@ -107,9 +107,9 @@ public class Udo implements Map<String, Object> {
     /**
      * If this udo contains a variable named key,
      * return the corresponding value.
-     * Implements the Map<String, Object> interface.
+     * Implements the {@code Map<String, Object>} interface.
      *
-     * @param key
+     * @param key The variable name to look up
      * @return the corresponding value to the variable named key if it exists, else null
      * @see Map
      */
@@ -120,7 +120,7 @@ public class Udo implements Map<String, Object> {
 
     /**
      * Get the hashcode for this udo.
-     * Implements the Map<String, Object> interface.
+     * Implements the {@code Map<String, Object>} interface.
      *
      * @return the hashcode
      * @see Map
@@ -132,7 +132,7 @@ public class Udo implements Map<String, Object> {
 
     /**
      * Return true if this udo is empty.
-     * Implements the Map<String, Object> interface.
+     * Implements the {@code Map<String, Object>} interface.
      *
      * @return true if this udo is empty, false otherwise.
      * @see Map
@@ -144,7 +144,7 @@ public class Udo implements Map<String, Object> {
 
     /**
      * Return the set of variable names in this udo.
-     * Implements the Map<String, Object> interface.
+     * Implements the {@code Map<String, Object>} interface.
      *
      * @return the set of variable names in this udo.
      * @see Map
@@ -156,7 +156,7 @@ public class Udo implements Map<String, Object> {
 
     /**
      * Add a new variable to this udo.
-     * Implements the Map<String, Object> interface.
+     * Implements the {@code Map<String, Object>} interface.
      *
      * @param key The name of the variable
      * @param value The value of the variable
@@ -180,7 +180,7 @@ public class Udo implements Map<String, Object> {
 
     /**
      * Add multiple variables to this udo.
-     * Implements the Map<String, Object> interface.
+     * Implements the {@code Map<String, Object>} interface.
      *
      * @param m A map containing the new data.
      * @see Map
@@ -201,9 +201,9 @@ public class Udo implements Map<String, Object> {
 
     /**
      * Remove the variable named key from this udo. Return its value.
-     * Implements the Map<String, Object> interface.
+     * Implements the {@code Map<String, Object>} interface.
      *
-     * @param key
+     * @param key The variable name to remove
      * @return value of the removed variable.
      * @see Map
      */
@@ -214,7 +214,7 @@ public class Udo implements Map<String, Object> {
 
     /**
      * Returns the number of variables contained in this udo.
-     * Implements the Map<String, Object> interface.
+     * Implements the {@code Map<String, Object>} interface.
      *
      * @return number of variables contained in this udo
      * @see Map
@@ -226,7 +226,7 @@ public class Udo implements Map<String, Object> {
 
     /**
      * Return set of variable values contained in this udo.
-     * Implements the Map<String, Object> interface.
+     * Implements the {@code Map<String, Object>} interface.
      *
      * @return set of variable names
      * @see Map
@@ -263,7 +263,7 @@ public class Udo implements Map<String, Object> {
     /**
      * Converts a {@link Collection} into a String array with non-null elements.
      *
-     * @param collection
+     * @param collection The collection to convert
      * @return List of Strings of non-null values, otherwise null if collection was
      *         null.
      */
@@ -315,11 +315,11 @@ public class Udo implements Map<String, Object> {
     }
 
     /**
-     * Decodes a Udo object from a json encoded string.
+     * Decodes a Udo object from a JSON encoded string.
      *
-     * @param json Json encoded Udo
-     * @return Json decoded Udo
-     * @throws UdoDeserializationException
+     * @param json JSON encoded Udo
+     * @return JSON decoded Udo
+     * @throws UdoDeserializationException if JSON cannot be parsed
      */
     public static Udo fromJson(String json) throws UdoDeserializationException {
         try {
@@ -331,10 +331,10 @@ public class Udo implements Map<String, Object> {
     }
 
     /**
-     * Encodes a Udo into a json encoded string.
+     * Encodes a Udo into a JSON encoded string.
      *
-     * @return Udo as json encoded string
-     * @throws UdoSerializationException
+     * @return Udo as JSON encoded string
+     * @throws UdoSerializationException if this udo can't be serialized to JSON
      */
     public String toJson() throws UdoSerializationException {
         try {

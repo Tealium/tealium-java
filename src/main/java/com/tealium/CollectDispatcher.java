@@ -40,6 +40,10 @@ final class CollectDispatcher {
      * @param endpoint
      *            The target url to send track dispatches to. Should NOT include
      *            any ending query strings or "?" suffix.
+     * @param context
+     *            Library context providing the logger.
+     * @param timeout
+     *            Read timeout for the collect call, in milliseconds.
      */
     public CollectDispatcher(String endpoint, LibraryContext context, int timeout) {
         super();
@@ -49,15 +53,19 @@ final class CollectDispatcher {
     }
 
     /**
-     * Packages data sources into expected URL call format and sends.
-     * 
+     * Encodes the data as JSON and POSTs it to the endpoint.
+     *
      * @param data
-     *            Map of all key-values to be sent with dispatch.
+     *            All key-values to be sent with dispatch.
      * @param callback
-     *            Optional callback object implementing the CollectCallback
-     *            interface.
+     *            Optional callback notified of the dispatch result; may be
+     *            null.
      * @throws CollectDispatchException
-     * @see{@link #CollectCallback}
+     *             If the data can't be serialized to JSON or the connection
+     *             can't be created. The callback is notified before throwing.
+     *             Failures while sending or a non-200 / "x-error" response are
+     *             reported only through the callback.
+     * @see DispatchCallback
      */
     public void dispatch(Udo data, DispatchCallback callback) throws CollectDispatchException {
         String payloadJson = encodePayload(data, callback);
@@ -68,10 +76,10 @@ final class CollectDispatcher {
     /**
      * Encode payload data into JSON, call the callback if it fails
      *
-     * @param data
-     * @param callback
+     * @param data The data to encode
+     * @param callback The callback to notify on failure, may be null
      * @return The encoded data as a JSON string
-     * @throws CollectDispatchException
+     * @throws CollectDispatchException if the data can't be serialized to JSON
      */
     private static String encodePayload(Udo data, DispatchCallback callback) throws CollectDispatchException {
         String payloadJson;
@@ -98,10 +106,11 @@ final class CollectDispatcher {
      * Create and return a new HttpURLConnection for making a collect call, calling the callback if the connection
      * can't be created for some reason.
      *
-     * @param data
-     * @param callback
+     * @param data The data being dispatched, passed to the callback on failure
+     * @param callback The callback to notify on failure, may be null
      * @return The HttpURLConnection instance to be used to send data
-     * @throws CollectDispatchException
+     * @throws CollectDispatchException if the endpoint url is malformed or the connection can't be opened or
+     *                                  configured
      */
     private HttpURLConnection getConnection(Udo data, DispatchCallback callback) throws CollectDispatchException {
         HttpURLConnection connection;
@@ -157,12 +166,13 @@ final class CollectDispatcher {
 
     /**
      * Take the payload string and HttpURLConnection and make the collect call,
-     * calling the callback if something goes wrong.
+     * then call the callback with the result. Failures are reported only
+     * through the callback, never thrown.
      *
-     * @param data
-     * @param callback
-     * @param payloadJson
-     * @param connection
+     * @param data The data being dispatched, passed to the callback
+     * @param callback The callback to notify of the result, may be null
+     * @param payloadJson The JSON-encoded data to send as the request body
+     * @param connection The connection returned by {@link #getConnection(Udo, DispatchCallback)}
      */
     private void sendPayload(Udo data, DispatchCallback callback, String payloadJson, HttpURLConnection connection) {
         // Send data and get response
@@ -199,12 +209,12 @@ final class CollectDispatcher {
 
             // Deal with bad response codes
             if (responseCode != 200) {
-                responseError = "Unexpected response code received: " + Integer.toString(responseCode);
+                responseError = "Unexpected response code received: " + responseCode;
                 throw new FailedRequestException(responseCode, responseError, headers);
             }
 
             // disconnect if there is still a connection
-            if (connection != null) connection.disconnect();
+            connection.disconnect();
 
             // call the dispatch callback
             callCallback(callback,
@@ -235,12 +245,12 @@ final class CollectDispatcher {
     // =========================================================================
 
     /**
-     * Call the dispatch callback with the results of the collect call, and call the callback.
+     * Build the info map from the results of the collect call and pass it to the callback.
      *
-     * @param callback The callback to call
+     * @param callback The callback to call, does nothing if null
      * @param success true if successful, false otherwise
-     * @param encodedUrl The url endpoint
-     * @param headerFields Response headers
+     * @param encodedUrl The url endpoint, null if the request was never sent
+     * @param headerFields Response headers, null if no response was received
      * @param data data sent to endpoint
      * @param errorMessage message of what went wrong, null if nothing went wrong
      */

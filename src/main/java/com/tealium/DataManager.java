@@ -26,6 +26,9 @@ public final class DataManager {
 
     /**
      * Constructor for new DataManager Object
+     *
+     * @param libraryContext Library context providing the account/profile/environment/datasource and logger.
+     * @param persistentData The persistent udo store to read from and write to.
      */
     public DataManager(LibraryContext libraryContext, PersistentUdo persistentData) {
         super();
@@ -64,10 +67,10 @@ public final class DataManager {
 
     /**
      * Convenience to add to persistent data map
-     * 
-     * @param data
      *
-     * @throws PersistentDataAccessException
+     * @param data The variables to merge into the persistent data map.
+     *
+     * @throws UdoSerializationException If the merged persistent data can't be serialized to JSON.
      */
     public void addPersistentData(Udo data) throws UdoSerializationException {
         Udo persistent = getPersistentData();
@@ -79,6 +82,7 @@ public final class DataManager {
      * Convenience to remove specific keys from the persistent data map
      *
      * @param keys The list of keys to be removed.
+     * @throws UdoSerializationException If the resulting persistent data can't be serialized to JSON.
      */
     public void deletePersistentData(List<String> keys) throws UdoSerializationException {
         Udo persistent = getPersistentData();
@@ -90,7 +94,8 @@ public final class DataManager {
 
     /**
      * Convenience to reset session ID
-     * 
+     *
+     * @return The newly generated session ID.
      */
     public String resetSessionId() {
         this.sessionId = getTimestampInMilliseconds();

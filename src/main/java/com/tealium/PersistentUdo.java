@@ -3,8 +3,7 @@ package com.tealium;
 import java.io.IOException;
 
 /**
- * Tealium data object for processing generation of standardized universal data
- * points.
+ * Reads and writes a persisted {@link Udo}, backed by a {@link TextStorage}.
  *
  * @author Chad Hartman, Jason Koo, Merritt Tidwell, Karen Tamayo, Chris Anderberg
  */
@@ -25,6 +24,7 @@ class PersistentUdo {
      * written by SDK 1.2.0 and earlier. If the file doesn't exist or neither decoding
      * succeeds, defaultData is used and persisted instead.
      *
+     * @param defaultData The data to use and persist if none could be loaded.
      * @return The deserialized Udo, or defaultData if none could be loaded.
      * @throws UdoSerializationException
      *             If defaultData needs to be persisted and can't be serialized to JSON.
