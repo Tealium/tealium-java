@@ -21,13 +21,18 @@ class PersistentUdo {
      * Tries to decode the stored text as JSON first (the format written by
      * {@link #writeData(Udo)} since SDK 1.3.0), falling back to the legacy
      * percent encoded format (see {@link Udo#fromPercentEncoded(String)}) for files
-     * written by SDK 1.2.0 and earlier. If the file doesn't exist or neither decoding
-     * succeeds, defaultData is used and persisted instead.
+     * written by SDK 1.2.0 and earlier. If the file can't be read, or neither decoding
+     * succeeds with a {@link UdoDeserializationException}, defaultData is used and
+     * persisted instead.
      *
      * @param defaultData The data to use and persist if none could be loaded.
      * @return The deserialized Udo, or defaultData if none could be loaded.
      * @throws UdoSerializationException
      *             If defaultData needs to be persisted and can't be serialized to JSON.
+     * @throws IllegalArgumentException
+     *             If the stored text is in the legacy percent encoded format and contains
+     *             an invalid percent escape (e.g. {@code key=%ZZ}). defaultData is not
+     *             used or persisted in this case.
      */
     public Udo readOrCreateUdo(Udo defaultData) throws UdoSerializationException {
         Udo loadedUdo = null;

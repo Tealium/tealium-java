@@ -337,9 +337,13 @@ public class Udo implements Map<String, Object> {
      * used before SDK 1.3.0 (JSON since then). Kept so persistent files written by
      * those older versions can still be loaded.
      *
+     * Escapes are decoded as UTF-8; byte sequences that aren't valid UTF-8 (e.g. {@code %FF})
+     * are replaced with U+FFFD rather than rejected.
+     *
      * @param persistentText the percent encoded udo, in the legacy {@code key=value&key2=a,b} format
      * @return the decoded Udo
-     * @throws UdoDeserializationException if persistentText is malformed or not UTF-8 encoded
+     * @throws UdoDeserializationException if a non-empty {@code &}-separated entry isn't a single {@code key=value} pair
+     * @throws IllegalArgumentException if persistentText contains an invalid percent escape (e.g. {@code %ZZ})
      */
     public static Udo fromPercentEncoded(String persistentText) throws UdoDeserializationException {
         String encodedKey, encodedValue, decodedKey;

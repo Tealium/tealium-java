@@ -101,4 +101,35 @@ public class UdoTests {
             // expected
         }
     }
+
+    @Test
+    public void fromPercentEncodedThrowsIllegalArgumentExceptionOnInvalidHexEscape() throws UdoDeserializationException {
+        try {
+            Udo.fromPercentEncoded("key=%ZZ");
+            fail("Expected IllegalArgumentException to be thrown for an invalid percent escape");
+        } catch (IllegalArgumentException e) {
+            // expected: URLDecoder rejects invalid hex digits, this is not wrapped as a UdoDeserializationException
+        }
+    }
+
+    @Test
+    public void fromPercentEncodedThrowsIllegalArgumentExceptionOnIncompleteTrailingEscape() throws UdoDeserializationException {
+        try {
+            Udo.fromPercentEncoded("key=abc%2");
+            fail("Expected IllegalArgumentException to be thrown for an incomplete trailing percent escape");
+        } catch (IllegalArgumentException e) {
+            // expected: URLDecoder rejects a trailing escape with too few hex digits
+        }
+    }
+
+    @Test
+    public void fromPercentEncodedDecodesInvalidUtf8EscapeToReplacementCharacter() throws UdoDeserializationException {
+        Udo decodedUdo = Udo.fromPercentEncoded("key=%FF");
+
+        Udo expectedUdo = new Udo();
+        expectedUdo.put("key", "\uFFFD");
+
+        // an escape that isn't valid UTF-8 is replaced rather than rejected
+        assertEquals(expectedUdo, decodedUdo);
+    }
 }

@@ -7,6 +7,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -114,6 +115,47 @@ public class PersistentUdoTests {
         assertEquals(expectedUdo, new PersistentUdo(mockedTextStorage).readOrCreateUdo(new Udo()));
 
         // the legacy file decoded successfully, so the default should never have been written back
+        verify(mockedTextStorage, never()).writeText(anyString());
+    }
+
+    @Test
+    public void readOrCreateUdoPropagatesIllegalArgumentExceptionWhenLegacyTextHasInvalidEscape()
+            throws UdoSerializationException, IOException {
+        // legacy text that is neither valid JSON nor validly percent encoded (invalid hex escape)
+        final String legacyText = "key=%ZZ";
+
+        TextStorage mockedTextStorage = mock(TextStorage.class);
+        when(mockedTextStorage.readText()).thenReturn(legacyText);
+
+        try {
+            new PersistentUdo(mockedTextStorage).readOrCreateUdo(new Udo());
+            fail("Expected IllegalArgumentException to be thrown for an invalid percent escape");
+        } catch (IllegalArgumentException e) {
+            // expected: the exception from the legacy fallback propagates instead of falling back to defaultData
+        }
+
+        // the invalid legacy text should not have been overwritten with defaultData
+        verify(mockedTextStorage, never()).writeText(anyString());
+    }
+
+    @Test
+    public void readOrCreateUdoPropagatesIllegalArgumentExceptionWhenStoredTextIsTruncatedJson()
+            throws UdoSerializationException, IOException {
+        // text left behind by a half-finished write: JSON decoding fails, and the legacy
+        // percent-decoding fallback then fails too, on the incomplete trailing "%"
+        final String truncatedText = "{\"discount\":\"x=50%";
+
+        TextStorage mockedTextStorage = mock(TextStorage.class);
+        when(mockedTextStorage.readText()).thenReturn(truncatedText);
+
+        try {
+            new PersistentUdo(mockedTextStorage).readOrCreateUdo(new Udo());
+            fail("Expected IllegalArgumentException to be thrown for an incomplete trailing percent escape");
+        } catch (IllegalArgumentException e) {
+            // expected: the exception from the legacy fallback propagates instead of falling back to defaultData
+        }
+
+        // the truncated text should not have been overwritten with defaultData
         verify(mockedTextStorage, never()).writeText(anyString());
     }
 
