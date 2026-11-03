@@ -1,33 +1,33 @@
 # Tealium Java Example App
 
 A small command-line app that exercises the Tealium Java SDK (`com.tealium:java`)
-against real Tealium Collect. It's a Gradle composite build that depends on the
-root project (`..`), so it always runs against the SDK source in this checkout —
-no published artifact is needed.
+against real Tealium Collect. It's a subproject of the root build and depends on
+the root project (the SDK) directly, so it always runs against the SDK source in
+this checkout — no published artifact is needed. It is not published itself.
 
 ## Running
 
 From the repository root, using the root Gradle wrapper:
 
 ```bash
-./gradlew -p example run --args="help"
-./gradlew -p example run --args="track button_click color=red"
-./gradlew -p example run --args="view product_page sku=abc123 tag=a tag=b"
-./gradlew -p example run --args="persist add user_id=123"
-./gradlew -p example run --args="persist show"
-./gradlew -p example run --args="persist delete user_id"
+./gradlew :example:run --args="help"
+./gradlew :example:run --args="track button_click color=red"
+./gradlew :example:run --args="view product_page sku=abc123 tag=a tag=b"
+./gradlew :example:run --args="persist add user_id=123"
+./gradlew :example:run --args="persist show"
+./gradlew :example:run --args="persist delete user_id"
 ```
 
 Global options go before the subcommand, e.g.:
 
 ```bash
-./gradlew -p example run --args="--account mycompany --profile main --env prod track app_open"
+./gradlew :example:run --args="--account mycompany --profile main --env prod track app_open"
 ```
 
 Building only:
 
 ```bash
-./gradlew -p example build
+./gradlew :example:build
 ```
 
 ## Commands

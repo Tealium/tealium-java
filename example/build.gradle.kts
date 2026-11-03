@@ -7,9 +7,8 @@ repositories {
 }
 
 dependencies {
-    // Resolved against the included build ".." via automatic dependency substitution,
-    // since that project's group ("com.tealium") and name ("java") match.
-    implementation("com.tealium:java:1.4.0")
+    // The root project is the SDK itself.
+    implementation(project(":"))
 }
 
 tasks.withType<JavaCompile>().configureEach {

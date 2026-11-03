@@ -91,26 +91,45 @@ public final class ExampleApp {
         String title = args[0];
         Udo eventData = parseKeyValueArgs(Arrays.copyOfRange(args, 1, args.length));
 
-        final boolean[] successHolder = new boolean[1];
-        final Map<String, Object>[] infoHolder = new Map[1];
-        final String[] errorHolder = new String[1];
+        CapturingDispatchCallback callback = new CapturingDispatchCallback();
+        tealium.track(eventType, title, eventData, callback);
 
-        tealium.track(eventType, title, eventData, new DispatchCallback() {
-            @Override
-            public void dispatchComplete(boolean success, Map<String, Object> info, String error) {
-                successHolder[0] = success;
-                infoHolder[0] = info;
-                errorHolder[0] = error;
-            }
-        });
-
-        System.out.println("success=" + successHolder[0]);
-        if (errorHolder[0] != null) {
-            System.out.println("error=" + errorHolder[0]);
+        System.out.println("success=" + callback.isSuccess());
+        if (callback.getError() != null) {
+            System.out.println("error=" + callback.getError());
         }
-        printInfo(infoHolder[0]);
+        printInfo(callback.getInfo());
 
-        return successHolder[0] ? 0 : 1;
+        return callback.isSuccess() ? 0 : 1;
+    }
+
+    /**
+     * Records the dispatch result. track() calls back synchronously on the
+     * caller's thread, so the result is available as soon as track() returns.
+     */
+    private static final class CapturingDispatchCallback implements DispatchCallback {
+        private boolean success;
+        private Map<String, Object> info;
+        private String error;
+
+        @Override
+        public void dispatchComplete(boolean success, Map<String, Object> info, String error) {
+            this.success = success;
+            this.info = info;
+            this.error = error;
+        }
+
+        boolean isSuccess() {
+            return success;
+        }
+
+        Map<String, Object> getInfo() {
+            return info;
+        }
+
+        String getError() {
+            return error;
+        }
     }
 
     private static int persistCommand(Tealium tealium, String[] args) throws UdoSerializationException {
@@ -178,12 +197,7 @@ public final class ExampleApp {
             String key = pair.substring(0, separatorIndex);
             String value = pair.substring(separatorIndex + 1);
 
-            List<String> values = collectedValues.get(key);
-            if (values == null) {
-                values = new ArrayList<String>();
-                collectedValues.put(key, values);
-            }
-            values.add(value);
+            collectedValues.computeIfAbsent(key, k -> new ArrayList<String>()).add(value);
         }
 
         Udo udo = new Udo();
@@ -227,7 +241,7 @@ public final class ExampleApp {
     }
 
     private static void printUsage(PrintStream out) {
-        out.println("Usage: run.sh [global options] <command> [args]");
+        out.println("Usage: ./gradlew :example:run --args=\"[global options] <command> [args]\"");
         out.println();
         out.println("Global options:");
         out.println("  --account <name>      Tealium account (default: tealiummobile)");
