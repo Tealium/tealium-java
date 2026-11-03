@@ -51,9 +51,8 @@ public final class ExampleApp {
             return 0;
         }
 
-        Tealium tealium = options.buildTealium();
-
         try {
+            Tealium tealium = options.buildTealium();
             switch (subcommand) {
                 case "track":
                     return trackCommand(tealium, EventType.ACTIVITY, subArgs);
@@ -334,7 +333,7 @@ public final class ExampleApp {
         }
 
         private static String requiredValue(String[] args, String flag, int index) {
-            if (index >= args.length) {
+            if (index >= args.length || args[index].startsWith("--")) {
                 throw new IllegalArgumentException("Missing value for " + flag);
             }
             return args[index];
