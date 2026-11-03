@@ -7,7 +7,9 @@ import org.junit.Test;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -88,6 +90,31 @@ public class PersistentUdoTests {
 
         // verify the writeText method was called with the json encoded udo
         verify(mockedTextStorage).writeText(udoAsJson);
+    }
+
+    @Test
+    public void readOrCreateUdoReturnsPercentDecodedUdoWhenPersistentTextIsLegacyFormat()
+            throws UdoSerializationException, IOException {
+        // a hand-written legacy (pre-1.3.0) percent encoded persistent file: a plain string value,
+        // a value that needs percent decoding, and a list value
+        final String legacyText = "plainKey=plainValue&spacedKey=hello%20world&greek=alpha,beta,gamma";
+
+        // the udo we expect to be decoded from the legacy text above
+        final Udo expectedUdo = new Udo();
+        expectedUdo.put("plainKey", "plainValue");
+        expectedUdo.put("spacedKey", "hello world");
+        expectedUdo.put("greek", new String[] { "alpha", "beta", "gamma" });
+
+        TextStorage mockedTextStorage = mock(TextStorage.class);
+
+        // return the legacy percent encoded text when readText() is called on the mock
+        when(mockedTextStorage.readText()).thenReturn(legacyText);
+
+        // create the test instance and call readOrCreateUdo using an empty udo as the default, and check result
+        assertEquals(expectedUdo, new PersistentUdo(mockedTextStorage).readOrCreateUdo(new Udo()));
+
+        // the legacy file decoded successfully, so the default should never have been written back
+        verify(mockedTextStorage, never()).writeText(anyString());
     }
 
     @Test

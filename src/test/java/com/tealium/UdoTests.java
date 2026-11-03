@@ -6,7 +6,9 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Test logic related to Udo
@@ -76,5 +78,27 @@ public class UdoTests {
         assertTrue(c.equals(a));
         assertTrue(c.equals(b));
         assertTrue(c.equals(c));
+    }
+
+    @Test
+    public void fromPercentEncodedDecodesPlainListAndEncodedValues() throws UdoDeserializationException {
+        Udo decodedUdo = Udo.fromPercentEncoded("plainKey=plainValue&spacedKey=hello%20world&greek=alpha,beta,gamma");
+
+        Udo expectedUdo = new Udo();
+        expectedUdo.put("plainKey", "plainValue");
+        expectedUdo.put("spacedKey", "hello world");
+        expectedUdo.put("greek", new String[] { "alpha", "beta", "gamma" });
+
+        assertEquals(expectedUdo, decodedUdo);
+    }
+
+    @Test
+    public void fromPercentEncodedThrowsOnMalformedPairMissingEqualsSign() {
+        try {
+            Udo.fromPercentEncoded("key");
+            fail("Expected UdoDeserializationException to be thrown for a pair without an '=' sign");
+        } catch (UdoDeserializationException e) {
+            // expected
+        }
     }
 }

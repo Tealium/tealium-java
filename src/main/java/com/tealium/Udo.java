@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
 import java.net.URLDecoder;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
@@ -346,11 +345,13 @@ public class Udo implements Map<String, Object> {
     }
 
     /**
-     * Decodes a Udo object from a percent encoded string.
+     * Decodes a Udo object from the legacy percent encoded persistent data format
+     * used before SDK 1.3.0 (JSON since then). Kept so persistent files written by
+     * those older versions can still be loaded.
      *
-     * @param persistentText
-     * @return
-     * @throws UdoDeserializationException
+     * @param persistentText the percent encoded udo, in the legacy {@code key=value&key2=a,b} format
+     * @return the decoded Udo
+     * @throws UdoDeserializationException if persistentText is malformed or not UTF-8 encoded
      */
     public static Udo fromPercentEncoded(String persistentText) throws UdoDeserializationException {
         String encodedKey, encodedValue, decodedKey;
@@ -390,57 +391,5 @@ public class Udo implements Map<String, Object> {
             }
         }
         return decodedUdo;
-    }
-
-    /**
-     * Serialize Map to storage.
-     *
-     * Maps are persisted using percent encoding so as to be dependency
-     * Independent; and immune to the vulnerabilities of the native
-     * serialization API.
-     *
-     * @throws UdoSerializationException
-     */
-    String toPercentEncoded() throws UdoSerializationException {
-        String serialized = "";
-
-        List<String> listValue;
-        String[] arrayValue;
-        boolean isAppending = false;
-
-        try {
-            for (Map.Entry<String, ?> entry : this.entrySet()) {
-
-                if (entry.getValue() == null) {
-                    continue;
-                }
-
-                if (isAppending) {
-                    serialized += '&';
-                } else {
-                    isAppending = true;
-                }
-
-                serialized += entry.getKey();
-                serialized += '=';
-
-                listValue = Udo.coerceIntoStringList(entry.getValue());
-                if (listValue != null) {
-                    final int lastIndex = listValue.size() - 1;
-                    for (int i = 0; i <= lastIndex; i++) {
-                        serialized += URLEncoder.encode(listValue.get(i), StandardCharsets.UTF_8.name());
-                        if (i != lastIndex) {
-                            serialized += ',';
-                        }
-                    }
-                } else {
-                    serialized += URLEncoder.encode(entry.getValue().toString(), StandardCharsets.UTF_8.name());
-                }
-            }
-        } catch(UnsupportedEncodingException e) {
-            throw new UdoSerializationException("Error serializing udo to percent encoding", e);
-        }
-
-        return serialized;
     }
 }
