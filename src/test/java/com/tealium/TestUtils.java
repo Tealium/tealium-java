@@ -1,6 +1,5 @@
 package com.tealium;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -47,34 +46,11 @@ public class TestUtils {
 
     }
 
-    public static TextStorage dummyTextStorage() {
-        return new TextStorage(null) {
-            private String text = null;
-
-            @Override
-            public String readText() throws IOException {
-                if(this.text == null) throw new IOException("Can't access text that hasn't been written");
-                return text;
-            }
-
-            @Override
-            public void writeText(String text) throws IOException {
-                if(text == null) throw new IOException("Can't write null text");
-                this.text = text;
-            }
-
-            @Override
-            public Boolean exists() {
-                return this.text != null;
-            }
-        };
-    }
-
-    public static PersistentUdo dummyPersistentUdo() {
+    static PersistentUdo dummyPersistentUdo() {
         return dummyPersistentUdo(null);
     }
 
-    public static PersistentUdo dummyPersistentUdo(final Udo initialUdo) {
+    static PersistentUdo dummyPersistentUdo(final Udo initialUdo) {
         return new PersistentUdo(null) {
             private Udo udo = initialUdo;
 

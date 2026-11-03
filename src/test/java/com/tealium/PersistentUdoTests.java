@@ -32,12 +32,12 @@ public class PersistentUdoTests {
 
     @Test
     public void writeUdoWritesJsonEncodedUdo() throws UdoSerializationException, IOException {
-        // initialize dummy udo, same udo as json encoded string, and mock of TextStorage
+        // initialize dummy udo, same udo as JSON encoded string, and mock of TextStorage
         final Udo udo = testUdo();
         final String udoAsJson = udo.toJson();
         TextStorage mockedTextStorage = mock(TextStorage.class);
 
-        // create a the test instance and call the writeData() method on the udo
+        // create a test instance and call the writeData() method on the udo
         new PersistentUdo(mockedTextStorage).writeData(udo);
 
         // verify the udo was encoded and written
@@ -47,12 +47,12 @@ public class PersistentUdoTests {
     @Test
     public void readOrCreateUdoReturnsJsonDecodedUdoWhenPersistentTextExists()
             throws UdoSerializationException, IOException {
-        // initialize dummy udo, same udo as json encoded string, and mock of TextStorage
+        // initialize dummy udo, same udo as JSON encoded string, and mock of TextStorage
         final Udo udo = testUdo();
         final String udoAsJson = udo.toJson();
         TextStorage mockedTextStorage = mock(TextStorage.class);
 
-        // return the json encoded udo when readText() is called on the mock
+        // return the JSON encoded udo when readText() is called on the mock
         when(mockedTextStorage.readText()).thenReturn(udoAsJson);
 
         // create the test instance and call readOrCreateUdo using an empty udo as the argument, and check result
@@ -62,9 +62,9 @@ public class PersistentUdoTests {
     @Test
     public void readOrCreateUdoReturnsDefaultUdoWhenPersistentTextDoesNotExist()
             throws UdoSerializationException, IOException {
-        // initialize dummy udo, same udo as json encoded string, and mock of TextStorage
+        // initialize dummy udo, same udo as JSON encoded string, and mock of TextStorage
         final Udo udo = testUdo();
-        final String udoAsJson = udo.toJson();
+        udo.toJson();
         TextStorage mockedTextStorage = mock(TextStorage.class);
 
         // throw an IOException when readText() is called on the mock
@@ -77,7 +77,7 @@ public class PersistentUdoTests {
     @Test
     public void readOrCreateUdoWritesDefaultUdoWhenPersistentTextDoesNotExist()
             throws UdoSerializationException, IOException {
-        // initialize dummy udo, same udo as json encoded string, and mock of TextStorage
+        // initialize dummy udo, same udo as JSON encoded string, and mock of TextStorage
         final Udo udo = testUdo();
         final String udoAsJson = udo.toJson();
         TextStorage mockedTextStorage = mock(TextStorage.class);
@@ -88,14 +88,14 @@ public class PersistentUdoTests {
         // create the test instance and call readOrCreateUdo with the test udo
         new PersistentUdo(mockedTextStorage).readOrCreateUdo(udo);
 
-        // verify the writeText method was called with the json encoded udo
+        // verify the writeText method was called with the JSON encoded udo
         verify(mockedTextStorage).writeText(udoAsJson);
     }
 
     @Test
     public void readOrCreateUdoReturnsPercentDecodedUdoWhenPersistentTextIsLegacyFormat()
             throws UdoSerializationException, IOException {
-        // a hand-written legacy (pre-1.3.0) percent encoded persistent file: a plain string value,
+        // a handwritten legacy (pre-1.3.0) percent encoded persistent file: a plain string value,
         // a value that needs percent decoding, and a list value
         final String legacyText = "plainKey=plainValue&spacedKey=hello%20world&greek=alpha,beta,gamma";
 

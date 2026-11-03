@@ -16,7 +16,7 @@ import static org.junit.Assert.*;
  */
 public class DataManagerTests {
     @Test
-    public void testInit() throws Exception {
+    public void testInit() {
         TestLibraryContext testCtx = TestLibraryContext.newInstance();
         new DataManager(testCtx, TestUtils.dummyPersistentUdo());
     }
@@ -25,7 +25,7 @@ public class DataManagerTests {
     public void testRandom() throws Exception {
         TestLibraryContext testCtx = TestLibraryContext.newInstance();
         DataManager data = new DataManager(testCtx, TestUtils.dummyPersistentUdo());
-        ArrayList<String> randomArray = new ArrayList<String>();
+        ArrayList<String> randomArray = new ArrayList<>();
         Class<? extends DataManager> myclass = data.getClass();
         Method method = myclass.getDeclaredMethod("getRandom");
         method.setAccessible(true);
@@ -44,7 +44,7 @@ public class DataManagerTests {
     }
 
     @Test
-    public void testGetPersistentData() throws Exception {
+    public void testGetPersistentData() {
 
         LibraryContext ctx = TestLibraryContext.newInstance();
 
@@ -105,7 +105,7 @@ public class DataManagerTests {
      * Test that new data contains expected variables
      */
     @Test
-    public void testNewPersistentData() throws PersistentDataAccessException, NoSuchMethodException,
+    public void testNewPersistentData() throws NoSuchMethodException,
             IllegalAccessException, InvocationTargetException {
 
         String account = "account";
@@ -120,7 +120,6 @@ public class DataManagerTests {
         Method method = myclass.getDeclaredMethod("createNewPersistentData");
         method.setAccessible(true);
 
-        @SuppressWarnings("unchecked")
         Udo persistentData = (Udo) method.invoke(data);
 
         Udo expectedData = new Udo();
@@ -139,7 +138,7 @@ public class DataManagerTests {
      * Test that new data doesn't contain visitor id or vid
      */
     @Test
-    public void testNewPersistentDataDoesNotContainVisitorId() throws PersistentDataAccessException,
+    public void testNewPersistentDataDoesNotContainVisitorId() throws
             NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         String account = "account";
         String profile = "profile";
@@ -162,7 +161,7 @@ public class DataManagerTests {
 
     // test that two consecutive session id resets don't result in the same new session id
     @Test
-    public void testResetSessionId() throws InterruptedException, PersistentDataAccessException {
+    public void testResetSessionId() throws InterruptedException {
 
         LibraryContext ctx = TestLibraryContext.newInstance();
 
@@ -172,7 +171,7 @@ public class DataManagerTests {
         Thread.sleep(100);
         String sessionId2 = data.resetSessionId();
 
-        assertFalse(sessionId.equals(sessionId2));
+        assertNotEquals(sessionId, sessionId2);
     }
 
     // =========================================================================
@@ -196,8 +195,8 @@ public class DataManagerTests {
             Object sourceValue = sourceMap.get(k);
             Object subSetValue = subSetMap.get(k);
             if (!sourceValue.equals(subSetValue)) {
-                System.out.println("Source map key-value: " + k + ":" + sourceValue.toString()
-                        + " does not equal subSet's: " + k + ":" + subSetValue.toString());
+                System.out.println("Source map key-value: " + k + ":" + sourceValue
+                        + " does not equal subSet's: " + k + ":" + subSetValue);
                 return false;
             }
         }

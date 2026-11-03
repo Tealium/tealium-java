@@ -24,7 +24,7 @@ public class UdoTests {
         Map<String, Object> resultMap1 = JSON.std.mapFrom(json1);
         Udo resultUdo1 = new Udo(resultMap1);
 
-        assertTrue(udo1.equals(resultUdo1));
+        assertEquals(udo1, resultUdo1);
 
         Map<String, Object> map2 = TestUtils.stringArrayMap();
         Udo udo2 = new Udo(map2);
@@ -32,7 +32,7 @@ public class UdoTests {
         Map<String, Object> resultMap2 = JSON.std.mapFrom(json2);
         Udo resultUdo2 = new Udo(resultMap2);
 
-        assertTrue(udo2.equals(resultUdo2));
+        assertEquals(udo2, resultUdo2);
 
         Map<String, Object> map3 = TestUtils.stringMixedAcceptableMap();
         Udo udo3 = new Udo(map3);
@@ -40,7 +40,7 @@ public class UdoTests {
         Map<String, Object> resultMap3 = JSON.std.mapFrom(json3);
         Udo resultUdo3 = new Udo(resultMap3);
 
-        assertTrue(udo3.equals(resultUdo3));
+        assertEquals(udo3, resultUdo3);
     }
 
     @Test
@@ -48,7 +48,7 @@ public class UdoTests {
         // several ways to construct empty Udo objects
         Udo a = new Udo();
 
-        Udo b = new Udo(new HashMap<String, Object>());
+        Udo b = new Udo(new HashMap<>());
 
         Map<String, Object> m = JSON.std.mapFrom("{}");
         Udo c = new Udo(m);
@@ -63,21 +63,21 @@ public class UdoTests {
         // several ways to construct empty Udo objects
         Udo a = new Udo();
 
-        Udo b = new Udo(new HashMap<String, Object>());
+        Udo b = new Udo(new HashMap<>());
 
         Map<String, Object> m = JSON.std.mapFrom("{}");
         Udo c = new Udo(m);
 
         // Go through some permutations
-        assertTrue(a.equals(a));
-        assertTrue(a.equals(b));
-        assertTrue(a.equals(c));
-        assertTrue(b.equals(a));
-        assertTrue(b.equals(b));
-        assertTrue(b.equals(c));
-        assertTrue(c.equals(a));
-        assertTrue(c.equals(b));
-        assertTrue(c.equals(c));
+        assertEquals(a, a);
+        assertEquals(a, b);
+        assertEquals(a, c);
+        assertEquals(b, a);
+        assertEquals(b, b);
+        assertEquals(b, c);
+        assertEquals(c, a);
+        assertEquals(c, b);
+        assertEquals(c, c);
     }
 
     @Test
