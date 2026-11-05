@@ -21,7 +21,7 @@ public class TextStorage {
      * Read persistent text from storage using this TextStorage's path
      *
      * @return the stored text
-     * @throws IOException
+     * @throws IOException if the file can't be read.
      */
     public String readText() throws IOException {
         byte[] bytes = Files.readAllBytes(this.path);
@@ -31,8 +31,8 @@ public class TextStorage {
     /**
      * Write persistent text to storage using this TextStorage's path
      *
-     * @param persistentText
-     * @throws IOException
+     * @param persistentText The text to write.
+     * @throws IOException if the file can't be written.
      */
     public void writeText(String persistentText) throws IOException {
         byte[] bytes = persistentText.getBytes(StandardCharsets.UTF_8);

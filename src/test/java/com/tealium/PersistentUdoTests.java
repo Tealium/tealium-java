@@ -4,10 +4,13 @@ import java.io.IOException;
 
 import org.junit.Test;
 
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -30,12 +33,12 @@ public class PersistentUdoTests {
 
     @Test
     public void writeUdoWritesJsonEncodedUdo() throws UdoSerializationException, IOException {
-        // initialize dummy udo, same udo as json encoded string, and mock of TextStorage
+        // initialize dummy udo, same udo as JSON encoded string, and mock of TextStorage
         final Udo udo = testUdo();
         final String udoAsJson = udo.toJson();
         TextStorage mockedTextStorage = mock(TextStorage.class);
 
-        // create a the test instance and call the writeData() method on the udo
+        // create a test instance and call the writeData() method on the udo
         new PersistentUdo(mockedTextStorage).writeData(udo);
 
         // verify the udo was encoded and written
@@ -45,12 +48,12 @@ public class PersistentUdoTests {
     @Test
     public void readOrCreateUdoReturnsJsonDecodedUdoWhenPersistentTextExists()
             throws UdoSerializationException, IOException {
-        // initialize dummy udo, same udo as json encoded string, and mock of TextStorage
+        // initialize dummy udo, same udo as JSON encoded string, and mock of TextStorage
         final Udo udo = testUdo();
         final String udoAsJson = udo.toJson();
         TextStorage mockedTextStorage = mock(TextStorage.class);
 
-        // return the json encoded udo when readText() is called on the mock
+        // return the JSON encoded udo when readText() is called on the mock
         when(mockedTextStorage.readText()).thenReturn(udoAsJson);
 
         // create the test instance and call readOrCreateUdo using an empty udo as the argument, and check result
@@ -60,9 +63,8 @@ public class PersistentUdoTests {
     @Test
     public void readOrCreateUdoReturnsDefaultUdoWhenPersistentTextDoesNotExist()
             throws UdoSerializationException, IOException {
-        // initialize dummy udo, same udo as json encoded string, and mock of TextStorage
+        // initialize dummy udo, same udo as JSON encoded string, and mock of TextStorage
         final Udo udo = testUdo();
-        final String udoAsJson = udo.toJson();
         TextStorage mockedTextStorage = mock(TextStorage.class);
 
         // throw an IOException when readText() is called on the mock
@@ -75,7 +77,7 @@ public class PersistentUdoTests {
     @Test
     public void readOrCreateUdoWritesDefaultUdoWhenPersistentTextDoesNotExist()
             throws UdoSerializationException, IOException {
-        // initialize dummy udo, same udo as json encoded string, and mock of TextStorage
+        // initialize dummy udo, same udo as JSON encoded string, and mock of TextStorage
         final Udo udo = testUdo();
         final String udoAsJson = udo.toJson();
         TextStorage mockedTextStorage = mock(TextStorage.class);
@@ -86,8 +88,66 @@ public class PersistentUdoTests {
         // create the test instance and call readOrCreateUdo with the test udo
         new PersistentUdo(mockedTextStorage).readOrCreateUdo(udo);
 
-        // verify the writeText method was called with the json encoded udo
+        // verify the writeText method was called with the JSON encoded udo
         verify(mockedTextStorage).writeText(udoAsJson);
+    }
+
+    @Test
+    public void readOrCreateUdoReturnsPercentDecodedUdoWhenPersistentTextIsLegacyFormat()
+            throws UdoSerializationException, IOException {
+        // a handwritten legacy (pre-1.3.0) percent encoded persistent file: a plain string value,
+        // a value that needs percent decoding, and a list value
+        final String legacyText = "plainKey=plainValue&spacedKey=hello%20world&greek=alpha,beta,gamma";
+
+        // the udo we expect to be decoded from the legacy text above
+        final Udo expectedUdo = new Udo();
+        expectedUdo.put("plainKey", "plainValue");
+        expectedUdo.put("spacedKey", "hello world");
+        expectedUdo.put("greek", new String[] { "alpha", "beta", "gamma" });
+
+        TextStorage mockedTextStorage = mock(TextStorage.class);
+
+        // return the legacy percent encoded text when readText() is called on the mock
+        when(mockedTextStorage.readText()).thenReturn(legacyText);
+
+        // create the test instance and call readOrCreateUdo using an empty udo as the default, and check result
+        assertEquals(expectedUdo, new PersistentUdo(mockedTextStorage).readOrCreateUdo(new Udo()));
+
+        // the legacy file decoded successfully, so the default should never have been written back
+        verify(mockedTextStorage, never()).writeText(anyString());
+    }
+
+    @Test
+    public void readOrCreateUdoPropagatesIllegalArgumentExceptionWhenLegacyTextHasInvalidEscape()
+            throws IOException {
+        // legacy text that is neither valid JSON nor validly percent encoded (invalid hex escape)
+        final String legacyText = "key=%ZZ";
+
+        TextStorage mockedTextStorage = mock(TextStorage.class);
+        when(mockedTextStorage.readText()).thenReturn(legacyText);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> new PersistentUdo(mockedTextStorage).readOrCreateUdo(new Udo()));
+
+        // the invalid legacy text should not have been overwritten with defaultData
+        verify(mockedTextStorage, never()).writeText(anyString());
+    }
+
+    @Test
+    public void readOrCreateUdoPropagatesIllegalArgumentExceptionWhenStoredTextIsTruncatedJson()
+            throws IOException {
+        // text left behind by a half-finished write: JSON decoding fails, and the legacy
+        // percent-decoding fallback then fails too, on the incomplete trailing "%"
+        final String truncatedText = "{\"discount\":\"x=50%";
+
+        TextStorage mockedTextStorage = mock(TextStorage.class);
+        when(mockedTextStorage.readText()).thenReturn(truncatedText);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> new PersistentUdo(mockedTextStorage).readOrCreateUdo(new Udo()));
+
+        // the truncated text should not have been overwritten with defaultData
+        verify(mockedTextStorage, never()).writeText(anyString());
     }
 
     @Test

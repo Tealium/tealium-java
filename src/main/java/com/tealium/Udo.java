@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
 import java.net.URLDecoder;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
@@ -16,21 +15,21 @@ import java.util.*;
  * either be a string, or a list of strings. Unfortunately the most
  * specific common superclass is Object, which makes it difficult to
  * represent the type of a udo using existing Java interfaces and types
- * alone. This class works by wrapping a Map<String, Object>, while
- * providing formatting logic. It implements the Map<String, Object>
+ * alone. This class works by wrapping a {@code Map<String, Object>}, while
+ * providing formatting logic. It implements the {@code Map<String, Object>}
  * interface for compatibility with parsing libraries (and other logic
  * that works on maps).
  *
  * @author Jason Koo, Chad Hartman, Karen Tamayo, Merritt Tidwell, Chris Anderberg
  */
 public class Udo implements Map<String, Object> {
-    private Map<String, Object> wrappedMap;
+    private final Map<String, Object> wrappedMap;
 
     /**
      * Construct an empty udo
      */
     public Udo() {
-        this.wrappedMap = new HashMap<String, Object>();
+        this.wrappedMap = new HashMap<>();
     }
 
     /**
@@ -38,14 +37,14 @@ public class Udo implements Map<String, Object> {
      *
      * @param data A map of names to values representing udo variables
      */
-    public Udo(Map<String, ? extends Object> data) {
-        this.wrappedMap = new HashMap<String, Object>();
+    public Udo(Map<String, ?> data) {
+        this.wrappedMap = new HashMap<>();
         this.putAll(data);
     }
 
     /**
      * Clear this udo of data.
-     * Implements the Map<String, Object> interface.
+     * Implements the {@code Map<String, Object>} interface.
      *
      * @see Map
      */
@@ -56,9 +55,9 @@ public class Udo implements Map<String, Object> {
 
     /**
      * Returns true if this udo contains a variable name (the key).
-     * Implements the Map<String, Object> interface.
+     * Implements the {@code Map<String, Object>} interface.
      *
-     * @param key
+     * @param key The variable name to check for
      * @return true if the key exists, false otherwise
      * @see Map
      */
@@ -69,9 +68,9 @@ public class Udo implements Map<String, Object> {
 
     /**
      * Returns true if this udo contains a variable value.
-     * Implements the Map<String, Object> interface.
+     * Implements the {@code Map<String, Object>} interface.
      *
-     * @param value
+     * @param value The variable value to check for
      * @return true if the value is contained, false otherwise
      * @see Map
      */
@@ -82,7 +81,7 @@ public class Udo implements Map<String, Object> {
 
     /**
      * Returns the set of name/value pairs of the variables in this udo
-     * Implements the Map<String, Object> interface.
+     * Implements the {@code Map<String, Object>} interface.
      *
      * @return A set of name/value pairs of all the variables in this udo
      * @see Map
@@ -94,7 +93,7 @@ public class Udo implements Map<String, Object> {
 
     /**
      * Returns true if this udo is equal to some other object.
-     * Implements the Map<String, Object> interface.
+     * Implements the {@code Map<String, Object>} interface.
      *
      * @param o The other object to compare to
      * @return true if equal, false otherwise.
@@ -108,9 +107,9 @@ public class Udo implements Map<String, Object> {
     /**
      * If this udo contains a variable named key,
      * return the corresponding value.
-     * Implements the Map<String, Object> interface.
+     * Implements the {@code Map<String, Object>} interface.
      *
-     * @param key
+     * @param key The variable name to look up
      * @return the corresponding value to the variable named key if it exists, else null
      * @see Map
      */
@@ -121,7 +120,7 @@ public class Udo implements Map<String, Object> {
 
     /**
      * Get the hashcode for this udo.
-     * Implements the Map<String, Object> interface.
+     * Implements the {@code Map<String, Object>} interface.
      *
      * @return the hashcode
      * @see Map
@@ -133,7 +132,7 @@ public class Udo implements Map<String, Object> {
 
     /**
      * Return true if this udo is empty.
-     * Implements the Map<String, Object> interface.
+     * Implements the {@code Map<String, Object>} interface.
      *
      * @return true if this udo is empty, false otherwise.
      * @see Map
@@ -145,7 +144,7 @@ public class Udo implements Map<String, Object> {
 
     /**
      * Return the set of variable names in this udo.
-     * Implements the Map<String, Object> interface.
+     * Implements the {@code Map<String, Object>} interface.
      *
      * @return the set of variable names in this udo.
      * @see Map
@@ -157,7 +156,7 @@ public class Udo implements Map<String, Object> {
 
     /**
      * Add a new variable to this udo.
-     * Implements the Map<String, Object> interface.
+     * Implements the {@code Map<String, Object>} interface.
      *
      * @param key The name of the variable
      * @param value The value of the variable
@@ -181,18 +180,18 @@ public class Udo implements Map<String, Object> {
 
     /**
      * Add multiple variables to this udo.
-     * Implements the Map<String, Object> interface.
+     * Implements the {@code Map<String, Object>} interface.
      *
      * @param m A map containing the new data.
      * @see Map
      */
     @Override
-    public void putAll(Map<? extends String, ? extends Object> m) {
-        for (Map.Entry<? extends String, ? extends Object> entry : m.entrySet()) {
+    public void putAll(Map<? extends String, ?> m) {
+        for (Map.Entry<? extends String, ?> entry : m.entrySet()) {
             final String key = entry.getKey();
             final Object value = entry.getValue();
 
-            if ((value == null) || (key == null) || (key.length() == 0)) {
+            if ((value == null) || (key == null) || (key.isEmpty())) {
                 continue;
             }
 
@@ -202,9 +201,9 @@ public class Udo implements Map<String, Object> {
 
     /**
      * Remove the variable named key from this udo. Return its value.
-     * Implements the Map<String, Object> interface.
+     * Implements the {@code Map<String, Object>} interface.
      *
-     * @param key
+     * @param key The variable name to remove
      * @return value of the removed variable.
      * @see Map
      */
@@ -215,7 +214,7 @@ public class Udo implements Map<String, Object> {
 
     /**
      * Returns the number of variables contained in this udo.
-     * Implements the Map<String, Object> interface.
+     * Implements the {@code Map<String, Object>} interface.
      *
      * @return number of variables contained in this udo
      * @see Map
@@ -227,7 +226,7 @@ public class Udo implements Map<String, Object> {
 
     /**
      * Return set of variable values contained in this udo.
-     * Implements the Map<String, Object> interface.
+     * Implements the {@code Map<String, Object>} interface.
      *
      * @return set of variable names
      * @see Map
@@ -235,18 +234,6 @@ public class Udo implements Map<String, Object> {
     @Override
     public Collection<Object> values() {
         return this.wrappedMap.values();
-    }
-
-    /**
-     * Get the map that this udo wraps under the hood.
-     * Using it can circumvent the logic this class is meant to provide.
-     * If it's needed for anything besides testing,
-     * refactoring is probably needed.
-     *
-     * @return the wrapped map
-     */
-    private Map<String, Object> getWrappedMap() {
-        return this.wrappedMap;
     }
 
     /**
@@ -264,7 +251,7 @@ public class Udo implements Map<String, Object> {
     /**
      * Converts a {@link Collection} into a String array with non-null elements.
      *
-     * @param collection
+     * @param collection The collection to convert
      * @return List of Strings of non-null values, otherwise null if collection was
      *         null.
      */
@@ -278,8 +265,8 @@ public class Udo implements Map<String, Object> {
         int count = 0;
 
         Object value;
-        for (Iterator<?> i = collection.iterator(); i.hasNext();) {
-            if ((value = i.next()) != null) {
+        for (Object o : collection) {
+            if ((value = o) != null) {
                 array[count++] = value.toString();
             }
         }
@@ -316,11 +303,11 @@ public class Udo implements Map<String, Object> {
     }
 
     /**
-     * Decodes a Udo object from a json encoded string.
+     * Decodes a Udo object from a JSON encoded string.
      *
-     * @param json Json encoded Udo
-     * @return Json decoded Udo
-     * @throws UdoDeserializationException
+     * @param json JSON encoded Udo
+     * @return JSON decoded Udo
+     * @throws UdoDeserializationException if JSON cannot be parsed
      */
     public static Udo fromJson(String json) throws UdoDeserializationException {
         try {
@@ -332,10 +319,10 @@ public class Udo implements Map<String, Object> {
     }
 
     /**
-     * Encodes a Udo into a json encoded string.
+     * Encodes a Udo into a JSON encoded string.
      *
-     * @return Udo as json encoded string
-     * @throws UdoSerializationException
+     * @return Udo as JSON encoded string
+     * @throws UdoSerializationException if this udo can't be serialized to JSON
      */
     public String toJson() throws UdoSerializationException {
         try {
@@ -346,11 +333,17 @@ public class Udo implements Map<String, Object> {
     }
 
     /**
-     * Decodes a Udo object from a percent encoded string.
+     * Decodes a Udo object from the legacy percent encoded persistent data format
+     * used before SDK 1.3.0 (JSON since then). Kept so persistent files written by
+     * those older versions can still be loaded.
      *
-     * @param persistentText
-     * @return
-     * @throws UdoDeserializationException
+     * Escapes are decoded as UTF-8; byte sequences that aren't valid UTF-8 (e.g. {@code %FF})
+     * are replaced with U+FFFD rather than rejected.
+     *
+     * @param persistentText the percent encoded udo, in the legacy {@code key=value&key2=a,b} format
+     * @return the decoded Udo
+     * @throws UdoDeserializationException if a non-empty {@code &}-separated entry isn't a single {@code key=value} pair
+     * @throws IllegalArgumentException if persistentText contains an invalid percent escape (e.g. {@code %ZZ})
      */
     public static Udo fromPercentEncoded(String persistentText) throws UdoDeserializationException {
         String encodedKey, encodedValue, decodedKey;
@@ -360,7 +353,7 @@ public class Udo implements Map<String, Object> {
 
         for (String pair : persistentText.split("&")) {
 
-            if (pair.length() == 0) {
+            if (pair.isEmpty()) {
                 continue;
             }
 
@@ -390,57 +383,5 @@ public class Udo implements Map<String, Object> {
             }
         }
         return decodedUdo;
-    }
-
-    /**
-     * Serialize Map to storage.
-     *
-     * Maps are persisted using percent encoding so as to be dependency
-     * Independent; and immune to the vulnerabilities of the native
-     * serialization API.
-     *
-     * @throws UdoSerializationException
-     */
-    String toPercentEncoded() throws UdoSerializationException {
-        String serialized = "";
-
-        List<String> listValue;
-        String[] arrayValue;
-        boolean isAppending = false;
-
-        try {
-            for (Map.Entry<String, ?> entry : this.entrySet()) {
-
-                if (entry.getValue() == null) {
-                    continue;
-                }
-
-                if (isAppending) {
-                    serialized += '&';
-                } else {
-                    isAppending = true;
-                }
-
-                serialized += entry.getKey();
-                serialized += '=';
-
-                listValue = Udo.coerceIntoStringList(entry.getValue());
-                if (listValue != null) {
-                    final int lastIndex = listValue.size() - 1;
-                    for (int i = 0; i <= lastIndex; i++) {
-                        serialized += URLEncoder.encode(listValue.get(i), StandardCharsets.UTF_8.name());
-                        if (i != lastIndex) {
-                            serialized += ',';
-                        }
-                    }
-                } else {
-                    serialized += URLEncoder.encode(entry.getValue().toString(), StandardCharsets.UTF_8.name());
-                }
-            }
-        } catch(UnsupportedEncodingException e) {
-            throw new UdoSerializationException("Error serializing udo to percent encoding", e);
-        }
-
-        return serialized;
     }
 }

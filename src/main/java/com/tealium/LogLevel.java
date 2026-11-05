@@ -10,7 +10,7 @@ public enum LogLevel {
 
     private final int priority;
 
-    private LogLevel(int priority) {
+    LogLevel(int priority) {
         this.priority = priority;
     }
 

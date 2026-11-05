@@ -3,7 +3,7 @@ package com.tealium;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Test logic related to the Logger
@@ -12,26 +12,26 @@ import static org.junit.Assert.assertTrue;
  */
 public class LoggerTests {
 	@Test
-	public void testMatchingVerbosity() throws Exception{
+	public void testMatchingVerbosity() {
 		String message = "Successful Log Test";
 		String output = new Logger(LogLevel.VERBOSE).log(message, LogLevel.VERBOSE);
 
-		assertTrue(output.equals(message));
+        assertEquals(message, output);
 	}
 
 	@Test
-	public void testAboveVerbosity() throws Exception{
+	public void testAboveVerbosity() {
 
 		Logger logger = new Logger(LogLevel.VERBOSE);
 
 		String message = "Successful Warning Log Test";
 		String output = logger.log(message, LogLevel.WARNINGS);
 
-		assertTrue(output.equals(message));
+        assertEquals(message, output);
 	}
 
 	@Test
-	public void testBelowVerbosity() throws Exception{
+	public void testBelowVerbosity() {
 		Logger logger = new Logger(LogLevel.ERRORS);
 
 		String message = "Error Log Message";

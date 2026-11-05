@@ -37,7 +37,7 @@ public final class Tealium {
         private int timeout = 5000;
 
         /**
-         * Constructor for a new Tealium object.
+         * Constructor for a new Builder, used to configure and construct a Tealium instance.
          * 
          * @param account
          *            Required. Tealium account name.
@@ -56,19 +56,19 @@ public final class Tealium {
         /**
          * Convenience function for making code prettier and more readable.
          *
-         * @param str
+         * @param str The string to check
          * @return true if the string is either null or empty
          */
-        private static boolean stringIsNullOrEmpty(String str) {return str == null || str.length() == 0;}
+        private static boolean stringIsNullOrEmpty(String str) {return str == null || str.isEmpty();}
         
         /**
-         * Constructor for a new Tealium object.
+         * Constructor for a new Builder, used to configure and construct a Tealium instance.
          * 
          * The preferred way to set environment is with the "setEnvironment" method.
          * Environment is therefore no longer required as a constructor argument, and this
          * constructor is deprecated.
          * 
-         * @deprecated use {@link #Builder(String, String)} ()} instead.
+         * @deprecated use {@link #Builder(String, String)} instead.
          * 
          * @param account
          *            Required. Tealium account name.
@@ -79,9 +79,9 @@ public final class Tealium {
          */
         @Deprecated
         public Builder(String account, String profile, String environment) {
-            if ((account == null) || (account.length() == 0)
-                    || (profile == null) || (profile.length() == 0)
-                    || (environment == null) || (environment.length() == 0)) {
+            if ((account == null) || (account.isEmpty())
+                    || (profile == null) || (profile.isEmpty())
+                    || (environment == null) || (environment.isEmpty())) {
                 throw new IllegalArgumentException("Account, profile, & environment must not be empty.");
             }
 
@@ -113,7 +113,7 @@ public final class Tealium {
                 this.collectDispatcher = new CollectDispatcher(CollectDispatcher.DEFAULT_URL, libraryContext, timeout);
             }
 
-            return new Tealium(libraryContext, this.collectDispatcher, this.persistentData, this.timeout);
+            return new Tealium(libraryContext, this.collectDispatcher, this.persistentData);
         }
 
         public Builder setLogLevel(LogLevel level) {
@@ -140,11 +140,29 @@ public final class Tealium {
             return this;
         }
 
+        /**
+         * @deprecated Internal testing hook. {@code CollectDispatcher} isn't public, so callers outside the library
+         *             can only pass null, which has no effect. This method will be made package-private in a
+         *             future release.
+         *
+         * @param collectDispatcher The dispatcher to use instead of the default, or null to use the default
+         * @return This builder
+         */
+        @Deprecated
         public Builder setCollectDispatcher(CollectDispatcher collectDispatcher) {
             this.collectDispatcher = collectDispatcher;
             return this;
         }
 
+        /**
+         * @deprecated Internal testing hook. {@code PersistentUdo} isn't public, so callers outside the library
+         *             can only pass null, which has no effect. This method will be made package-private in a
+         *             future release.
+         *
+         * @param persistentData The persistent data store to use instead of the default, or null to use the default
+         * @return This builder
+         */
+        @Deprecated
         public Builder setPersistentData(PersistentUdo persistentData) {
             this.persistentData = persistentData;
             return this;
@@ -171,16 +189,16 @@ public final class Tealium {
     public interface DispatchCallback {
         /**
          * Required method to handle callback.
-         * 
+         *
          * @param success
+         *            true if the dispatch succeeded, false otherwise.
          * @param info
-         *            Map containing call info, typical keys: dispatch_service, payload
+         *            Map containing call info, typical keys: dispatch_service, encoded_url, payload,
+         *            response_headers.
          * @param error
-         *            null or string whether an occurred.
-         * 
-         * @return String encoded URL string
+         *            null if the dispatch succeeded, otherwise a string describing what went wrong.
          */
-        public void dispatchComplete(boolean success, Map<String, Object> info, String error);
+        void dispatchComplete(boolean success, Map<String, Object> info, String error);
     }
 
     // =========================================================================
@@ -235,7 +253,7 @@ public final class Tealium {
      *
      * @deprecated
      *            Use the implementation of track that accepts a Udo type for event data, instead of the ambiguous
-     *            Map<String, ?> argument this one takes.
+     *            {@code Map<String, ?>} argument this one takes.
      * @param eventTitle
      *            Required title of event.
      * @param eventData
@@ -255,7 +273,7 @@ public final class Tealium {
      *            Optional udo of additional data to pass with call. Values
      *            should be Strings or Array of Strings.
      * @param callback
-     *            Object conforming to the CollectCallback interface.
+     *            Optional {@link Tealium.DispatchCallback} to notify of the dispatch result, may be null.
      */
     public void track(String eventTitle, Udo eventData, Tealium.DispatchCallback callback) {
 
@@ -267,14 +285,14 @@ public final class Tealium {
      *
      * @deprecated
      *            Use the implementation of track that accepts a Udo type for event data, instead of the ambiguous
-     *            Map<String, ?> argument this one takes.
+     *            {@code Map<String, ?>} argument this one takes.
      * @param eventTitle
      *            Required title of event.
      * @param eventData
      *            Optional map of additional data to pass with call. Values
      *            should be Strings or Array of Strings.
      * @param callback
-     *            Object conforming to the CollectCallback interface.
+     *            Optional {@link Tealium.DispatchCallback} to notify of the dispatch result, may be null.
      */
     public void track(String eventTitle, Map<String, ?> eventData, Tealium.DispatchCallback callback) {
 
@@ -286,14 +304,14 @@ public final class Tealium {
      * 
      * @param eventType
      *            Optional track type (VIEW, ACTIVITY, INTERACTION, DERIVED, CONVERSION). Defaults
-     *            to ACTIVITY if nil.
+     *            to ACTIVITY if null.
      * @param eventTitle
      *            Required title of event.
      * @param eventData
      *            Optional udo of additional data to pass with call. Values
      *            should be Strings or Array of Strings.
      * @param callback
-     *            Object conforming to the CollectCallback interface.
+     *            Optional {@link Tealium.DispatchCallback} to notify of the dispatch result, may be null.
      */
     public void track(String eventType, String eventTitle, Udo eventData, Tealium.DispatchCallback callback) {
 
@@ -332,17 +350,17 @@ public final class Tealium {
      *
      * @deprecated
      *            Use the implementation of track that accepts a Udo type for event data, instead of the ambiguous
-     *            Map<String, ?> argument this one takes.
+     *            {@code Map<String, ?>} argument this one takes.
      * @param eventType
      *            Optional track type (VIEW, ACTIVITY, INTERACTION, DERIVED, CONVERSION). Defaults
-     *            to ACTIVITY if nil.
+     *            to ACTIVITY if null.
      * @param eventTitle
      *            Required title of event.
      * @param eventData
      *            Optional map of additional data to pass with call. Values
      *            should be Strings or Array of Strings.
      * @param callback
-     *            Object conforming to the CollectCallback interface.
+     *            Optional {@link Tealium.DispatchCallback} to notify of the dispatch result, may be null.
      */
     public void track(String eventType, String eventTitle, Map<String, ?> eventData, Tealium.DispatchCallback callback) {
         this.track(eventType, eventTitle, eventData == null ? null : new Udo(eventData), callback);
@@ -352,12 +370,10 @@ public final class Tealium {
     // PRIVATE
     // =========================================================================
 
-    private Tealium(LibraryContext libraryContext, CollectDispatcher collectDispatcher, PersistentUdo persistentData, int timeout) {
+    private Tealium(LibraryContext libraryContext, CollectDispatcher collectDispatcher, PersistentUdo persistentData) {
         super();
         this.libraryContext = libraryContext;
         this.dataManager = new DataManager(this.libraryContext, persistentData);
-        // Is the URL in the constructor future proofing?
         this.collectDispatcher = collectDispatcher;
     }
-
 }

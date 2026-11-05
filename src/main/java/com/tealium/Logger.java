@@ -34,6 +34,7 @@ final class Logger {
      *            String description.
      * @param level
      *            Level of message.
+     * @return The message if it was logged, null if level is below the logger's configured level.
      */
     public String log(String message, LogLevel level) {
         if (isLogging(level)) {
@@ -41,7 +42,7 @@ final class Logger {
             return message;
         }
         return null;
-    };
+    }
 
     public void log(Throwable t, LogLevel level) {
         if (isLogging(level)) {

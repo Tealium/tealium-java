@@ -2,7 +2,6 @@ package com.tealium;
 
 import com.tealium.Tealium.DispatchCallback;
 import org.junit.Test;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -31,14 +30,10 @@ public class CollectDispatcherTests {
 
         final CountDownLatch barrier = new CountDownLatch(1);
 
-        DispatchCallback callBack = new DispatchCallback() {
-
-            public void dispatchComplete(boolean success, Map<String, Object> info, String error) {
-                System.out.println(error);
-                assertTrue(success);
-                barrier.countDown();
-            }
-
+        DispatchCallback callBack = (success, info, error) -> {
+            System.out.println(error);
+            assertTrue(success);
+            barrier.countDown();
         };
 
         Udo data = new Udo();
@@ -61,15 +56,9 @@ public class CollectDispatcherTests {
 
         final CountDownLatch barrier = new CountDownLatch(1);
 
-        DispatchCallback callBack = new DispatchCallback() {
-
-            @Override
-            public void dispatchComplete(boolean success, Map<String, Object> info, String error) {
-
-                assertFalse(success);
-                barrier.countDown();
-            }
-
+        DispatchCallback callBack = (success, info, error) -> {
+            assertFalse(success);
+            barrier.countDown();
         };
 
         Udo data = new Udo();
