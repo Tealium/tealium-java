@@ -16,7 +16,7 @@ public class LoggerTests {
 		String message = "Successful Log Test";
 		String output = new Logger(LogLevel.VERBOSE).log(message, LogLevel.VERBOSE);
 
-        assertEquals(output, message);
+        assertEquals(message, output);
 	}
 
 	@Test
@@ -27,7 +27,7 @@ public class LoggerTests {
 		String message = "Successful Warning Log Test";
 		String output = logger.log(message, LogLevel.WARNINGS);
 
-        assertEquals(output, message);
+        assertEquals(message, output);
 	}
 
 	@Test

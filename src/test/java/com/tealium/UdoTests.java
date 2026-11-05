@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 /**
  * Test logic related to Udo
@@ -92,34 +91,19 @@ public class UdoTests {
         assertEquals(expectedUdo, decodedUdo);
     }
 
-    @Test
-    public void fromPercentEncodedThrowsOnMalformedPairMissingEqualsSign() {
-        try {
-            Udo.fromPercentEncoded("key");
-            fail("Expected UdoDeserializationException to be thrown for a pair without an '=' sign");
-        } catch (UdoDeserializationException e) {
-            // expected
-        }
+    @Test(expected = UdoDeserializationException.class)
+    public void fromPercentEncodedThrowsOnMalformedPairMissingEqualsSign() throws UdoDeserializationException {
+        Udo.fromPercentEncoded("key");
     }
 
-    @Test
+    @Test(expected = IllegalArgumentException.class)
     public void fromPercentEncodedThrowsIllegalArgumentExceptionOnInvalidHexEscape() throws UdoDeserializationException {
-        try {
-            Udo.fromPercentEncoded("key=%ZZ");
-            fail("Expected IllegalArgumentException to be thrown for an invalid percent escape");
-        } catch (IllegalArgumentException e) {
-            // expected: URLDecoder rejects invalid hex digits, this is not wrapped as a UdoDeserializationException
-        }
+        Udo.fromPercentEncoded("key=%ZZ");
     }
 
-    @Test
+    @Test(expected = IllegalArgumentException.class)
     public void fromPercentEncodedThrowsIllegalArgumentExceptionOnIncompleteTrailingEscape() throws UdoDeserializationException {
-        try {
-            Udo.fromPercentEncoded("key=abc%2");
-            fail("Expected IllegalArgumentException to be thrown for an incomplete trailing percent escape");
-        } catch (IllegalArgumentException e) {
-            // expected: URLDecoder rejects a trailing escape with too few hex digits
-        }
+        Udo.fromPercentEncoded("key=abc%2");
     }
 
     @Test
