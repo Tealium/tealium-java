@@ -26,7 +26,7 @@ final class CollectDispatcher {
     public final static String DEFAULT_URL = "https://collect.tealiumiq.com/event";
 
     private final String endpoint;
-    private final Logger logger; // TODO: use or remove
+    private final Logger logger;
     private final int timeout;
 
     // =========================================================================
@@ -224,6 +224,8 @@ final class CollectDispatcher {
                     data,
                     null);
         } catch (FailedRequestException e) {
+            this.logger.log("Dispatch failed with response code " + e.statusCode + ": " + e.customMessage,
+                    LogLevel.ERRORS);
             callCallback(callback,
                     false,
                     this.endpoint,
@@ -231,6 +233,7 @@ final class CollectDispatcher {
                     data,
                     e.toString());
         } catch (FailedConnectionException e) {
+            this.logger.log(e, LogLevel.ERRORS);
             callCallback(callback,
                     false,
                     this.endpoint,

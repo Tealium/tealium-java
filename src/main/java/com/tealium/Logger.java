@@ -18,9 +18,13 @@ final class Logger {
     }
 
     public Logger(LogLevel level) {
+        this(level, System.out);
+    }
+
+    Logger(LogLevel level, PrintStream out) {
         super();
         this.level = level;
-        out = System.out;
+        this.out = out;
     }
 
     public boolean isLogging(LogLevel level) {
