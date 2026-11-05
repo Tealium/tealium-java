@@ -51,7 +51,7 @@ public class TealiumTests {
     }
 
     @Test
-    public void testTrackCallContainsCorrectData() throws InterruptedException {
+    public void testTrackPayloadContainsStandardKeysAndNoVisitorId() throws InterruptedException {
         server.enqueue(new MockResponse.Builder().code(200).build());
 
         // create a fake persistent data that just returns the default data
@@ -107,7 +107,7 @@ public class TealiumTests {
     }
 
     @Test
-    public void testTrackCallPayloadAndPersistentDataAreNotSame() throws InterruptedException {
+    public void testTrackDoesNotAddEventDataToPersistentData() throws InterruptedException {
         server.enqueue(new MockResponse.Builder().code(200).build());
 
         final CountDownLatch barrier = new CountDownLatch(1);

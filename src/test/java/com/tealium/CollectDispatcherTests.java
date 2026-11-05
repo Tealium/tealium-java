@@ -106,7 +106,7 @@ public class CollectDispatcherTests {
     }
 
     @Test
-    public void testFailingDispatch() throws Exception {
+    public void testClosedPortCallsCallbackWithFailure() throws Exception {
         int closedPort;
         try (ServerSocket socket = new ServerSocket(0)) {
             closedPort = socket.getLocalPort();
@@ -135,7 +135,7 @@ public class CollectDispatcherTests {
 
     // LOGGING TESTS
     @Test
-    public void testFailedConnectionIsLoggedWithoutCallback() throws Exception {
+    public void testFailedConnectionIsLoggedWhenCallbackIsNull() throws Exception {
         int closedPort;
         try (ServerSocket socket = new ServerSocket(0)) {
             closedPort = socket.getLocalPort();
@@ -149,7 +149,7 @@ public class CollectDispatcherTests {
     }
 
     @Test
-    public void testRejectedRequestIsLoggedWithoutCallback() throws Exception {
+    public void testRejectedRequestIsLoggedWhenCallbackIsNull() throws Exception {
         server.enqueue(new MockResponse.Builder()
                 .code(400)
                 .addHeader("x-error", "invalid payload")
