@@ -156,11 +156,15 @@ public class TealiumTests {
         eventData.put("event_data", "event_value");
 
         final CountDownLatch barrier = new CountDownLatch(1);
-        tealium.track("test", eventData, (success, info, error) -> barrier.countDown());
+        tealium.track("test", eventData, (success, info, error) -> {
+            assertTrue(success);
+            barrier.countDown();
+        });
 
         assertTrue(barrier.await(5, TimeUnit.SECONDS));
 
-        RecordedRequest recordedRequest = server.takeRequest();
+        RecordedRequest recordedRequest = server.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(recordedRequest);
         Map<String, Object> bodyMap = JSON.std.mapFrom(recordedRequest.getBody().utf8());
 
         assertEquals("event_value", bodyMap.get("event_data"));

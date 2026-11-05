@@ -69,7 +69,8 @@ public class CollectDispatcherTests {
 
         assertTrue(barrier.await(5, TimeUnit.SECONDS));
 
-        RecordedRequest recordedRequest = server.takeRequest();
+        RecordedRequest recordedRequest = server.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(recordedRequest);
         assertEquals("POST", recordedRequest.getMethod());
         assertEquals("application/json; charset=UTF-8", recordedRequest.getHeaders().get("Content-Type"));
 
