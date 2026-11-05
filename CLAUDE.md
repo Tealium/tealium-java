@@ -15,6 +15,7 @@ Use the Gradle wrapper (`./gradlew`); no system Gradle install required.
 ./gradlew test                                        # all tests (JUnit 4)
 ./gradlew test --tests TealiumTests                   # single test class
 ./gradlew test --tests 'TealiumTests.testTealiumInit' # single test method
+./gradlew :example:run --args="help"                  # run the example CLI app (see example/README.md)
 ```
 
 No lint, checkstyle, or static-analysis tooling is configured.
@@ -29,7 +30,7 @@ No lint, checkstyle, or static-analysis tooling is configured.
 
 ## Architecture
 
-Everything lives in the single package `com.tealium`. `Tealium` and `Udo` are the main public entry points; additional public types include `DataManager`, `TextStorage`, `LogLevel`, and several exception classes.
+The whole SDK lives in the single package `com.tealium`. `Tealium` and `Udo` are the main public entry points; additional public types include `DataManager`, `TextStorage`, `LogLevel`, and several exception classes.
 
 Data flow for `Tealium.track(eventType, title, Udo data, DispatchCallback)`:
 
@@ -43,6 +44,10 @@ Data flow for `Tealium.track(eventType, title, Udo data, DispatchCallback)`:
 3. `Tealium` merges those layers with the event keys and the caller's `Udo`, then calls **`CollectDispatcher.dispatch`**. That method POSTs JSON over a blocking `HttpURLConnection` on the caller's thread; there are no executors. A dispatch succeeds only with HTTP 200 and no `x-error` response header. Failures are wrapped in `CollectDispatchException`. The result reaches the caller through `DispatchCallback.dispatchComplete(success, info, error)`.
 
 `Udo` wraps a `Map<String, Object>` whose values are `String` or `List<String>`. Overloads that take a raw `Map` are deprecated in favor of `Udo`.
+
+## Example app
+
+`example/` is a subproject (`include("example")` in the root `settings.gradle.kts`) holding a small CLI that drives the SDK against real Collect. It depends on the SDK via `project(":")`, so root `./gradlew build` compiles it: public API changes must keep it compiling. It's not published, because `maven-publish` and the publication are configured only on the root project. Usage is in `example/README.md`.
 
 ## Tests
 
