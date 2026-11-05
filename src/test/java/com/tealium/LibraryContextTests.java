@@ -13,6 +13,7 @@ public class LibraryContextTests {
     public void testVersionMatchesProjectVersion() {
         String projectVersion = System.getProperty("tealium.projectVersion");
         assertNotNull("tealium.projectVersion is set by the Gradle test task", projectVersion);
+        //noinspection MisorderedAssertEqualsArguments
         assertEquals(projectVersion, LibraryContext.version);
     }
 }

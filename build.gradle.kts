@@ -17,6 +17,7 @@ dependencies {
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.mockito:mockito-core:5.24.0")
+    testImplementation("com.squareup.okhttp3:mockwebserver3:5.5.1")
     mockitoAgent("org.mockito:mockito-core:5.24.0") { isTransitive = false }
 }
 
@@ -69,6 +70,11 @@ tasks.test {
         agentJar.from(mockitoAgent)
     })
     systemProperty("tealium.projectVersion", version.toString())
+    // Tests that use the default ~/.tealium storage write under build/ instead of the real home directory,
+    // starting from an empty directory on every run.
+    val testHome = layout.buildDirectory.dir("test-home")
+    doFirst { delete(testHome) }
+    systemProperty("user.home", testHome.get().asFile.absolutePath)
 }
 
 publishing {

@@ -1,7 +1,8 @@
 package com.tealium;
 
-import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -11,7 +12,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /**
  * Test logic related to storing persistent text
@@ -19,29 +19,25 @@ import java.nio.file.Paths;
  * Jason Koo, Chad Hartman, Karen Tamayo, Merritt Tidwell, Chris Anderberg
  */
 public class TextStorageTests {
-    private static final Path testFilePath = Paths.get(System.getProperty("user.home"), "tealiumpersistencetestfile.txt");
+    @Rule
+    public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-    @After
-    public void tearDown() throws IOException {
-        Files.deleteIfExists(testFilePath);
+    private Path testFilePath() {
+        return temporaryFolder.getRoot().toPath().resolve("tealiumpersistencetestfile.txt");
     }
 
     @Test
     public void testTextIsStored() throws IOException {
-        // delete file if it already exists
-        this.tearDown();
+        Path testFilePath = testFilePath();
 
         // write some text with one TextStorage instance, and read it with another, verifying they're equal
         new TextStorage(testFilePath).writeText("this is a test");
         assertEquals("this is a test", new TextStorage(testFilePath).readText());
-
-        this.tearDown();
     }
 
     @Test
     public void testTextIsOverwritten() throws IOException {
-        // delete file if it already exists
-        this.tearDown();
+        Path testFilePath = testFilePath();
 
         // write some text with one TextStorage instance, and read it with another, verifying they're equal
         new TextStorage(testFilePath).writeText("this is a test");
@@ -53,21 +49,17 @@ public class TextStorageTests {
         // write some new text with one TextStorage instance, and read it with another, verifying they're equal
         new TextStorage(testFilePath).writeText("this is another test");
         assertEquals("this is another test", new TextStorage(testFilePath).readText());
-
-        this.tearDown();
     }
 
     @Test
-    public void testExistsReturnsFalseWhenFileDoesNotExistAtPath() throws IOException {
-        this.tearDown();
-        assertFalse(new TextStorage(testFilePath).exists());
+    public void testExistsReturnsFalseWhenFileDoesNotExistAtPath() {
+        assertFalse(new TextStorage(testFilePath()).exists());
     }
 
     @Test
     public void testExistsReturnsTrueWhenFileExistsAtPath() throws IOException {
-        Files.createDirectories(testFilePath.getParent());
+        Path testFilePath = testFilePath();
         Files.write(testFilePath, "test content".getBytes(StandardCharsets.UTF_8));
         assertTrue(new TextStorage(testFilePath).exists());
-        this.tearDown();
     }
 }
