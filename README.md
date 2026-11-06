@@ -51,7 +51,13 @@ or as environment variables of the same name (a Gradle property takes precedence
 1. Bump `version` in `build.gradle.kts` and add a Change Log entry below.
 2. If the AWS session token may have expired, update the `AWS_ACCESS_KEY` / `AWS_SECRET_KEY` / `AWS_SESSION_TOKEN` repository secrets.
 3. Publish a GitHub release with a tag equal to the version (e.g. `1.5.0`). This triggers the "Publish Release" workflow, which verifies the tag matches the project version before publishing.
-4. If the run fails because the credentials went stale, update the secrets and start a new run with "Run workflow" (workflow_dispatch), choosing the release tag. Don't use "Re-run jobs" on the failed run: it may not pick up the updated secrets.
+4. If the run fails because the credentials went stale, update the secrets, then start a new run with "Run workflow" (workflow_dispatch) on `master` (this works as long as `master` hasn't moved past the release tag). If it has, dispatch from the tag instead:
+
+   ```bash
+   gh workflow run publish-release.yml --ref 1.5.0
+   ```
+
+   Don't use "Re-run jobs" on the failed run: it may not pick up the updated secrets.
 
 ## Change Log
 

@@ -1,8 +1,10 @@
-# Triggered by a published GitHub release, or manually (workflow_dispatch) from the release tag.
-# Credentials are repository secrets (AWS_ACCESS_KEY / AWS_SECRET_KEY / AWS_SESSION_TOKEN) that
-# are updated by hand before a release, since AWS_SESSION_TOKEN is a temporary session token.
-# If a run fails because the credentials went stale, update the secrets and start a new run via
-# workflow_dispatch from the tag rather than re-running this one.
+# Triggered by a published GitHub release, or manually (workflow_dispatch) from the release tag or
+# from master (allowed only when master's HEAD is the release tag). Credentials are repository
+# secrets (AWS_ACCESS_KEY / AWS_SECRET_KEY / AWS_SESSION_TOKEN) that are updated by hand before a
+# release, since AWS_SESSION_TOKEN is a temporary session token. If a run fails because the
+# credentials went stale, update the secrets and start a new run via workflow_dispatch from
+# master, or from the tag with `gh workflow run publish-release.yml --ref <version>`, rather than
+# re-running this one.
 name: Publish Release
 
 on:
@@ -27,19 +29,32 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v6
 
-      - name: Check tag matches project version
+      - name: Check the ref is the release
         run: |
           set -euo pipefail
 
-          if [ "${GITHUB_REF_TYPE}" != "tag" ]; then
-            echo "::error::This workflow must be run from a tag (got ref_type=${GITHUB_REF_TYPE})."
-            exit 1
-          fi
-
           project_version=$(./gradlew -q properties --property version | sed -n 's/^version: //p')
 
-          if [ "${GITHUB_REF_NAME}" != "${project_version}" ]; then
-            echo "::error::Tag '${GITHUB_REF_NAME}' does not match project version '${project_version}'."
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            if [ "${GITHUB_REF_NAME}" != "${project_version}" ]; then
+              echo "::error::Tag '${GITHUB_REF_NAME}' does not match project version '${project_version}'."
+              exit 1
+            fi
+          elif [ "${GITHUB_REF_TYPE}" = "branch" ] && [ "${GITHUB_REF_NAME}" = "master" ]; then
+            if ! git fetch --no-tags --depth=1 origin "refs/tags/${project_version}:refs/tags/${project_version}"; then
+              echo "::error::No tag '${project_version}' exists; publish the GitHub release first."
+              exit 1
+            fi
+
+            tag_commit=$(git rev-parse "refs/tags/${project_version}^{commit}")
+            head_commit=$(git rev-parse HEAD)
+
+            if [ "${tag_commit}" != "${head_commit}" ]; then
+              echo "::error::master has moved past tag '${project_version}'; dispatch from the tag instead: gh workflow run publish-release.yml --ref ${project_version}"
+              exit 1
+            fi
+          else
+            echo "::error::Run this workflow from the release tag or from master."
             exit 1
           fi
 

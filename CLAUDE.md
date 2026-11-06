@@ -24,7 +24,7 @@ No lint, checkstyle, or static-analysis tooling is configured.
 
 ## CI
 
-`.github/workflows/build.yml` runs `./gradlew build` on a JDK 17/21/25 matrix for pull requests and pushes to `master`. `.github/workflows/publish-release.yml` runs on a published GitHub release or manual `workflow_dispatch` from the release tag, checks the tag matches the project version, then runs `./gradlew publish` using the `AWS_ACCESS_KEY` / `AWS_SECRET_KEY` / `AWS_SESSION_TOKEN` repository secrets.
+`.github/workflows/build.yml` runs `./gradlew build` on a JDK 17/21/25 matrix for pull requests and pushes to `master`. `.github/workflows/publish-release.yml` runs on a published GitHub release or manual `workflow_dispatch` from the release tag or from `master` whose HEAD is the release tag; it checks the ref against the project version, then runs `./gradlew publish` using the `AWS_ACCESS_KEY` / `AWS_SECRET_KEY` / `AWS_SESSION_TOKEN` repository secrets.
 
 ## Compatibility constraints
 
