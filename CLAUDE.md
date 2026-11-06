@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Tealium Java library (`com.tealium:java`) — sends events to Tealium Collect / AudienceStream. Single runtime dependency: `jackson-jr-objects` (JSON). Published to an S3 Maven repo (`s3://maven.tealiumiq.com/java/releases/`) via Gradle's `maven-publish` plugin, with `AwsCredentials` resolved from the Gradle properties `tealiumAccessKey` / `tealiumSecretKey` / `tealiumSessionToken`.
+Tealium Java library (`com.tealium:java`) — sends events to Tealium Collect / AudienceStream. Single runtime dependency: `jackson-jr-objects` (JSON). Published to an S3 Maven repo (`s3://maven.tealiumiq.com/java/releases/`) via Gradle's `maven-publish` plugin, with `AwsCredentials` resolved from `AWS_ACCESS_KEY` / `AWS_SECRET_KEY` / `AWS_SESSION_TOKEN`, each read from a Gradle property of that name or, failing that, an environment variable of that name.
 
 ## Commands
 
@@ -21,6 +21,10 @@ Use the Gradle wrapper (`./gradlew`); no system Gradle install required.
 No lint, checkstyle, or static-analysis tooling is configured.
 
 `CollectDispatcherTests` and `TealiumTests` make **real HTTP requests** to `https://collect.tealiumiq.com/event` (plus an intentionally unreachable host), so they need network access.
+
+## CI
+
+`.github/workflows/build.yml` runs `./gradlew build` on a JDK 17/21/25 matrix for pull requests and pushes to `master`. `.github/workflows/publish-release.yml` runs on a published GitHub release or manual `workflow_dispatch` from the release tag, checks the tag matches the project version, then runs `./gradlew publish` using the `AWS_ACCESS_KEY` / `AWS_SECRET_KEY` / `AWS_SESSION_TOKEN` repository secrets.
 
 ## Compatibility constraints
 

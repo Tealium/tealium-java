@@ -1,0 +1,53 @@
+# Triggered by a published GitHub release, or manually (workflow_dispatch) from the release tag.
+# Credentials are repository secrets (AWS_ACCESS_KEY / AWS_SECRET_KEY / AWS_SESSION_TOKEN) that
+# are updated by hand before a release, since AWS_SESSION_TOKEN is a temporary session token.
+# If a run fails because the credentials went stale, update the secrets and start a new run via
+# workflow_dispatch from the tag rather than re-running this one.
+name: Publish Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Check tag matches project version
+        run: |
+          set -euo pipefail
+
+          if [ "${GITHUB_REF_TYPE}" != "tag" ]; then
+            echo "::error::This workflow must be run from a tag (got ref_type=${GITHUB_REF_TYPE})."
+            exit 1
+          fi
+
+          project_version=$(./gradlew -q properties --property version | sed -n 's/^version: //p')
+
+          if [ "${GITHUB_REF_NAME}" != "${project_version}" ]; then
+            echo "::error::Tag '${GITHUB_REF_NAME}' does not match project version '${project_version}'."
+            exit 1
+          fi
+
+      - run: ./gradlew build
+
+      - name: Publish
+        env:
+          AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
+          AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+        run: ./gradlew publish
