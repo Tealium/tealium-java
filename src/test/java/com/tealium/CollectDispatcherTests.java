@@ -95,13 +95,7 @@ public class CollectDispatcherTests {
             barrier.countDown();
         };
 
-        Udo data = new Udo();
-        data.put("autotracked", "false");
-        data.put("tealium_account", "tealiummobile");
-        data.put("tealium_profile", "demo");
-        data.put("tealium_visitor_id", "612040730c8c11e6b4cbtest329f41b7");
-        data.put("tealium_vid", "612040730c8c11e6b4cbtest329f41b7");
-        collect.dispatch(data, callBack);
+        collect.dispatch(new Udo(), callBack);
 
         assertTrue(barrier.await(5, TimeUnit.SECONDS));
     }
@@ -123,13 +117,7 @@ public class CollectDispatcherTests {
             barrier.countDown();
         };
 
-        Udo data = new Udo();
-        data.put("autotracked", "false");
-        data.put("tealium_account", "tealiummobile");
-        data.put("tealium_profile", "demo");
-        data.put("tealium_visitor_id", "612040730c8c11e6b4cbtest329f41b7");
-        data.put("tealium_vid", "612040730c8c11e6b4cbtest329f41b7");
-        collect.dispatch(data, callBack);
+        collect.dispatch(new Udo(), callBack);
 
         assertTrue(barrier.await(5, TimeUnit.SECONDS));
     }
