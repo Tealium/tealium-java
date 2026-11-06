@@ -22,7 +22,7 @@ public class DataManagerTests {
     }
 
     @Test
-    public void testRandom() throws Exception {
+    public void testGetRandomReturnsUnique16DigitValues() throws Exception {
         TestLibraryContext testCtx = TestLibraryContext.newInstance();
         DataManager data = new DataManager(testCtx, TestUtils.dummyPersistentUdo());
         ArrayList<String> randomArray = new ArrayList<>();
@@ -44,7 +44,7 @@ public class DataManagerTests {
     }
 
     @Test
-    public void testGetPersistentData() {
+    public void testGetPersistentDataReturnsStoredData() {
 
         LibraryContext ctx = TestLibraryContext.newInstance();
 
@@ -105,7 +105,7 @@ public class DataManagerTests {
      * Test that new data contains expected variables
      */
     @Test
-    public void testNewPersistentData() throws NoSuchMethodException,
+    public void testCreateNewPersistentDataContainsContextKeys() throws NoSuchMethodException,
             IllegalAccessException, InvocationTargetException {
 
         String account = "account";
@@ -161,7 +161,7 @@ public class DataManagerTests {
 
     // test that two consecutive session id resets don't result in the same new session id
     @Test
-    public void testResetSessionId() throws InterruptedException {
+    public void testResetSessionIdReturnsNewIdEachTime() throws InterruptedException {
 
         LibraryContext ctx = TestLibraryContext.newInstance();
 

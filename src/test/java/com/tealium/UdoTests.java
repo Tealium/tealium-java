@@ -16,7 +16,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class UdoTests {
     @Test
-    public void nonEmptyUdoEncodesProperly() throws IOException, UdoSerializationException {
+    public void nonEmptyUdoRoundTripsThroughJson() throws IOException, UdoSerializationException {
         Map<String, Object> map1 = TestUtils.stringStringMap();
         Udo udo1 = new Udo(map1);
         String json1 = udo1.toJson();

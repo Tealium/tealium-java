@@ -20,7 +20,7 @@ Use the Gradle wrapper (`./gradlew`); no system Gradle install required.
 
 No lint, checkstyle, or static-analysis tooling is configured.
 
-`CollectDispatcherTests` and `TealiumTests` make **real HTTP requests** to `https://collect.tealiumiq.com/event` (plus an intentionally unreachable host), so they need network access.
+`CollectDispatcherTests` and `TealiumTests` run against a local `mockwebserver3.MockWebServer` (started per-test), plus closed local ports for connection-failure cases; no test makes a real network request. `tasks.test` redirects `user.home` to a directory under `build/` so storage-related tests never touch the developer's real home directory.
 
 ## Compatibility constraints
 

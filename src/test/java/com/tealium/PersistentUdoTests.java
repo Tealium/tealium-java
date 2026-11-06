@@ -32,7 +32,7 @@ public class PersistentUdoTests {
     }
 
     @Test
-    public void writeUdoWritesJsonEncodedUdo() throws UdoSerializationException, IOException {
+    public void writeDataWritesJsonEncodedUdo() throws UdoSerializationException, IOException {
         // initialize dummy udo, same udo as JSON encoded string, and mock of TextStorage
         final Udo udo = testUdo();
         final String udoAsJson = udo.toJson();
