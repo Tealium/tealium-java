@@ -12,7 +12,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class LoggerTests {
 	@Test
-	public void testMatchingVerbosity() {
+	public void testLogReturnsMessageWhenLevelMatchesLoggerLevel() {
 		String message = "Successful Log Test";
 		String output = new Logger(LogLevel.VERBOSE).log(message, LogLevel.VERBOSE);
 
@@ -20,7 +20,7 @@ public class LoggerTests {
 	}
 
 	@Test
-	public void testAboveVerbosity() {
+	public void testLogReturnsMessageWhenLevelIsAboveLoggerLevel() {
 
 		Logger logger = new Logger(LogLevel.VERBOSE);
 
@@ -31,7 +31,7 @@ public class LoggerTests {
 	}
 
 	@Test
-	public void testBelowVerbosity() {
+	public void testLogReturnsNullWhenLevelIsBelowLoggerLevel() {
 		Logger logger = new Logger(LogLevel.ERRORS);
 
 		String message = "Error Log Message";
