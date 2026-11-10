@@ -90,9 +90,17 @@ publishing {
         maven {
             name = "tealium"
             url = uri("s3://maven.tealiumiq.com/java/releases/")
-            // Gradle resolves these from the properties tealiumAccessKey, tealiumSecretKey,
-            // and optionally tealiumSessionToken (e.g. in ~/.gradle/gradle.properties).
-            credentials(AwsCredentials::class)
+            // Each credential is read from a Gradle property of the same name if set (e.g. in
+            // ~/.gradle/gradle.properties), falling back to an environment variable of the same
+            // name otherwise.
+            credentials(AwsCredentials::class) {
+                accessKey = awsCredential("AWS_ACCESS_KEY")
+                secretKey = awsCredential("AWS_SECRET_KEY")
+                sessionToken = awsCredential("AWS_SESSION_TOKEN")
+            }
         }
     }
 }
+
+private fun awsCredential(name: String): String? =
+    providers.gradleProperty(name).orElse(providers.environmentVariable(name)).orNull
