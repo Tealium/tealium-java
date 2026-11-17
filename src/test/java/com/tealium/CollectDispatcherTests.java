@@ -101,6 +101,36 @@ public class CollectDispatcherTests {
     }
 
     @Test
+    public void testReadTimeoutCallsCallbackWithFailureAndReturnsBeforeServerDelay() throws Exception {
+        // the server waits well past the dispatcher's read timeout before sending response headers
+        server.enqueue(new MockResponse.Builder()
+                .code(200)
+                .headersDelay(1, TimeUnit.SECONDS)
+                .build());
+
+        CollectDispatcher collect = new CollectDispatcher(server.url("/event").toString(),
+                TestLibraryContext.newInstance(), 200);
+
+        final boolean[] successHolder = new boolean[1];
+        final String[] errorHolder = new String[1];
+
+        DispatchCallback callBack = (success, info, error) -> {
+            successHolder[0] = success;
+            errorHolder[0] = error;
+        };
+
+        long start = System.nanoTime();
+        collect.dispatch(new Udo(), callBack);
+        long elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+
+        assertFalse(successHolder[0]);
+        assertNotNull(errorHolder[0]);
+        // bounded by the 200ms read timeout, well short of the server's 1000ms headers delay
+        assertTrue("dispatch took " + elapsedMs + "ms, expected it to be bounded by the read timeout",
+                elapsedMs < 600);
+    }
+
+    @Test
     public void testClosedPortCallsCallbackWithFailure() throws Exception {
         int closedPort;
         try (ServerSocket socket = new ServerSocket(0)) {
