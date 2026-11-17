@@ -18,10 +18,11 @@ From the repository root, using the root Gradle wrapper:
 ./gradlew :example:run --args="persist delete user_id"
 ```
 
-Global options go before the subcommand, e.g.:
+**Attention!** Global options go before the subcommand in the args string, e.g.:
 
 ```bash
 ./gradlew :example:run --args="--account mycompany --profile main --env prod track app_open"
+./gradlew :example:run --args="--timeout 3000 --log-level ERRORS track button_click color=red"
 ```
 
 Building only:
