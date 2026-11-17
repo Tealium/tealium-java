@@ -1,5 +1,6 @@
 package com.tealium;
 
+import java.net.HttpURLConnection;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -16,6 +17,10 @@ import org.junit.Test;
 import com.tealium.Tealium.DispatchCallback;
 
 import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 /**
  * Test logic related to Tealium
@@ -48,6 +53,69 @@ public class TealiumTests {
                 .setLogLevel(LogLevel.WARNINGS)
                 .build();
 
+    }
+
+    // TIMEOUT VALIDATION TESTS
+
+    @Test
+    public void testSetTimeoutZeroThrows() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new Tealium.Builder("tealiummobile", "main").setTimeout(0));
+    }
+
+    @Test
+    public void testSetTimeoutNegativeThrows() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new Tealium.Builder("tealiummobile", "main").setTimeout(-1));
+    }
+
+    @Test
+    public void testSetConnectTimeoutZeroThrows() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new Tealium.Builder("tealiummobile", "main").setConnectTimeout(0));
+    }
+
+    @Test
+    public void testSetConnectTimeoutNegativeThrows() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new Tealium.Builder("tealiummobile", "main").setConnectTimeout(-1));
+    }
+
+    // TIMEOUT PLUMBING TESTS (Builder -> CollectDispatcher)
+
+    @Test
+    public void testDefaultBuilderNeverSetsConnectTimeoutAndUsesDefaultReadTimeout() throws Exception {
+        Tealium tealium = new Tealium.Builder("tealiummobile", "main").build();
+        HttpURLConnection connection = mock(HttpURLConnection.class);
+
+        tealium.getCollectDispatcher().configureConnection(connection);
+
+        verify(connection, never()).setConnectTimeout(anyInt());
+        verify(connection).setReadTimeout(5000);
+    }
+
+    @Test
+    public void testSetConnectTimeoutIsPassedToConnection() throws Exception {
+        Tealium tealium = new Tealium.Builder("tealiummobile", "main")
+                .setConnectTimeout(3000)
+                .build();
+        HttpURLConnection connection = mock(HttpURLConnection.class);
+
+        tealium.getCollectDispatcher().configureConnection(connection);
+
+        verify(connection).setConnectTimeout(3000);
+    }
+
+    @Test
+    public void testSetTimeoutIsPassedToConnectionAsReadTimeout() throws Exception {
+        Tealium tealium = new Tealium.Builder("tealiummobile", "main")
+                .setTimeout(1234)
+                .build();
+        HttpURLConnection connection = mock(HttpURLConnection.class);
+
+        tealium.getCollectDispatcher().configureConnection(connection);
+
+        verify(connection).setReadTimeout(1234);
     }
 
     @Test

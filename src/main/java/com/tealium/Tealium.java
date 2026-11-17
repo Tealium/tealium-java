@@ -35,6 +35,7 @@ public final class Tealium {
         private PersistentUdo persistentData = null;
         private LogLevel logLevel = LogLevel.VERBOSE;
         private int timeout = 5000;
+        private Integer connectTimeout = null;
 
         /**
          * Constructor for a new Builder, used to configure and construct a Tealium instance.
@@ -110,7 +111,8 @@ public final class Tealium {
 
             // set the collect dispatcher if it hasn't been explicitly set with the setCollectDispatcher() method.
             if(this.collectDispatcher == null) {
-                this.collectDispatcher = new CollectDispatcher(CollectDispatcher.DEFAULT_URL, libraryContext, timeout);
+                this.collectDispatcher = new CollectDispatcher(CollectDispatcher.DEFAULT_URL, libraryContext,
+                        timeout, connectTimeout);
             }
 
             return new Tealium(libraryContext, this.collectDispatcher, this.persistentData);
@@ -168,11 +170,44 @@ public final class Tealium {
             return this;
         }
 
+        /**
+         * Sets the read timeout for the collect call, in milliseconds. This is the timeout applied to each
+         * individual read of the response, not to the request as a whole, so a server that trickles bytes slowly
+         * can still hold a dispatch open longer than this value. Defaults to 5000ms.
+         *
+         * <p>Has no effect on a dispatcher injected with the deprecated
+         * {@link #setCollectDispatcher(CollectDispatcher)}.
+         *
+         * @param timeout Read timeout in milliseconds. Must be greater than zero.
+         * @return This builder
+         * @throws IllegalArgumentException if timeout is less than or equal to zero.
+         */
         public Builder setTimeout(int timeout) {
-            if (timeout == 0) {
+            if (timeout <= 0) {
                 throw new IllegalArgumentException("Timeout should be greater than zero.");
             }
             this.timeout = timeout;
+            return this;
+        }
+
+        /**
+         * Sets the connect timeout for the collect call, in milliseconds: how long to wait for the TCP connection
+         * to the collect endpoint to be established. Unset by default, in which case the JVM's
+         * {@code -Dsun.net.client.defaultConnectTimeout} system property applies, or the operating system's own
+         * limit if that property isn't set either. A value set here takes precedence over that property.
+         *
+         * <p>Has no effect on a dispatcher injected with the deprecated
+         * {@link #setCollectDispatcher(CollectDispatcher)}.
+         *
+         * @param connectTimeout Connect timeout in milliseconds. Must be greater than zero.
+         * @return This builder
+         * @throws IllegalArgumentException if connectTimeout is less than or equal to zero.
+         */
+        public Builder setConnectTimeout(int connectTimeout) {
+            if (connectTimeout <= 0) {
+                throw new IllegalArgumentException("Connect timeout should be greater than zero.");
+            }
+            this.connectTimeout = connectTimeout;
             return this;
         }
 
@@ -207,6 +242,17 @@ public final class Tealium {
 
     public String getAccount() {
         return this.libraryContext.getAccount();
+    }
+
+    /**
+     * Test seam: exposes the {@link CollectDispatcher} this instance was built with, whether the default one
+     * created by {@link Builder#build()} or one injected via the deprecated
+     * {@link Builder#setCollectDispatcher(CollectDispatcher)}.
+     *
+     * @return The collect dispatcher used by this instance.
+     */
+    CollectDispatcher getCollectDispatcher() {
+        return this.collectDispatcher;
     }
 
     public DataManager getDataManager() {
