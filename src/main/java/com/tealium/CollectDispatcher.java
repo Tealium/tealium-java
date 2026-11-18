@@ -1,6 +1,7 @@
 package com.tealium;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -24,6 +25,9 @@ import com.tealium.DataManager.InfoKey;
 final class CollectDispatcher {
 
     public final static String DEFAULT_URL = "https://collect.tealiumiq.com/event";
+
+    /** The most bytes of a failed response's body that are read before the stream is closed. */
+    static final int MAX_FAILURE_BODY_BYTES = 8192;
 
     private final String endpoint;
     private final Logger logger;
@@ -89,8 +93,8 @@ final class CollectDispatcher {
      * @throws CollectDispatchException
      *             If the data can't be serialized to JSON or the connection
      *             can't be created. The callback is notified before throwing.
-     *             Failures while sending or a non-200 / "x-error" response are
-     *             reported only through the callback.
+     *             Failures while sending, a non-2xx response or an "x-error"
+     *             response are reported only through the callback.
      * @see DispatchCallback
      */
     public void dispatch(Udo data, DispatchCallback callback) throws CollectDispatchException {
@@ -199,6 +203,8 @@ final class CollectDispatcher {
         connection.setRequestProperty("Accept", "application/json; charset=UTF-8");
         connection.setDoOutput(true);
         connection.setRequestMethod("POST");
+        // A 3xx is reported as a failure; in streaming mode the JDK couldn't follow it anyway.
+        connection.setInstanceFollowRedirects(false);
         connection.setReadTimeout(this.timeout);
 
         if (this.connectTimeout != null) {
@@ -223,13 +229,18 @@ final class CollectDispatcher {
 
             int responseCode;
 
+            byte[] payload = payloadJson.getBytes(StandardCharsets.UTF_8);
+
             // send the data
             try {
+                // Streaming stops the JDK from silently resending the POST when the response read fails.
+                connection.setFixedLengthStreamingMode(payload.length);
                 connection.connect();
                 OutputStream os = connection.getOutputStream();
-                os.write(payloadJson.getBytes(StandardCharsets.UTF_8));
+                os.write(payload);
                 os.close();
             } catch (IOException e) {
+                connection.disconnect();
                 throw new FailedConnectionException("Could not open connection with server.", e);
             }
 
@@ -237,26 +248,24 @@ final class CollectDispatcher {
             try {
                 responseCode = connection.getResponseCode();
             } catch (IOException e) {
+                connection.disconnect();
                 throw new FailedConnectionException("Could not get response from server.", e);
             }
 
-            // check the response for serverside issues, including any complaints about the payload
+            // check the response for serverside issues, including any complaints about the payload;
+            // an "x-error" header takes precedence over the status code
             String responseError = connection.getHeaderField("x-error");
             headers = connection.getHeaderFields();
 
-            // see if there was an error defined with the "x-error" header in the response
+            if (responseError == null && (responseCode < 200 || responseCode > 299)) {
+                responseError = "Unexpected response code received: " + responseCode;
+            }
+
+            releaseConnection(connection, responseCode, responseError == null);
+
             if (responseError != null) {
                 throw new FailedRequestException(responseCode, responseError, headers);
             }
-
-            // Deal with bad response codes
-            if (responseCode != 200) {
-                responseError = "Unexpected response code received: " + responseCode;
-                throw new FailedRequestException(responseCode, responseError, headers);
-            }
-
-            // disconnect if there is still a connection
-            connection.disconnect();
 
             // call the dispatch callback
             callCallback(callback,
@@ -282,6 +291,38 @@ final class CollectDispatcher {
                     null,
                     data,
                     e.toString());
+        }
+    }
+
+    /**
+     * Test seam: reads the response body so the JDK can reuse the connection, then closes it. A successful
+     * response's body is read to the end; at most {@value #MAX_FAILURE_BODY_BYTES} bytes of a failed one are
+     * read. On close, the JDK keeps the connection if the rest of the body has already arrived, drains up to
+     * 512 KB of it on a background thread, or closes the socket. If reading fails, the connection is
+     * disconnected; that doesn't change the dispatch's result.
+     *
+     * @param connection The connection the response was received on
+     * @param responseCode The response's status code
+     * @param success Whether the dispatch succeeded
+     */
+    void releaseConnection(HttpURLConnection connection, int responseCode, boolean success) {
+        try {
+            InputStream body = responseCode < 400 ? connection.getInputStream() : connection.getErrorStream();
+            if (body == null) {
+                return;
+            }
+
+            int limit = success ? Integer.MAX_VALUE : MAX_FAILURE_BODY_BYTES;
+            byte[] buffer = new byte[4096];
+            int total = 0;
+            int read;
+            while (total < limit && (read = body.read(buffer, 0, Math.min(buffer.length, limit - total))) != -1) {
+                total += read;
+            }
+            body.close();
+        } catch (IOException e) {
+            connection.disconnect();
+            this.logger.log("Could not read the response body: " + e, LogLevel.VERBOSE);
         }
     }
 
