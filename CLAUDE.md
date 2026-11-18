@@ -45,7 +45,7 @@ Data flow for `Tealium.track(eventType, title, Udo data, DispatchCallback)`:
    - universal keys.
 
    Key names live in `DataManager.Key` and event types in `DataManager.EventType`.
-3. `Tealium` merges those layers with the event keys and the caller's `Udo`, then calls **`CollectDispatcher.dispatch`**. That method POSTs JSON over a blocking `HttpURLConnection` on the caller's thread; there are no executors. A dispatch succeeds only with HTTP 200 and no `x-error` response header. Failures are wrapped in `CollectDispatchException`. The result reaches the caller through `DispatchCallback.dispatchComplete(success, info, error)`.
+3. `Tealium` merges those layers with the event keys and the caller's `Udo`, then calls **`CollectDispatcher.dispatch`**. That method POSTs JSON over a blocking `HttpURLConnection` on the caller's thread; there are no executors. A dispatch succeeds only with an HTTP 2xx status and no `x-error` response header. Failures are wrapped in `CollectDispatchException`. The result reaches the caller through `DispatchCallback.dispatchComplete(success, info, error)`.
 
 `Udo` wraps a `Map<String, Object>` whose values are `String` or `List<String>`. Overloads that take a raw `Map` are deprecated in favor of `Udo`.
 
