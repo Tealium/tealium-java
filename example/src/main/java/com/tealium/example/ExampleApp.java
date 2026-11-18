@@ -186,7 +186,7 @@ public final class ExampleApp {
      * arguments (e.g. "a=1 a=2") becomes a single List&lt;String&gt; value.
      */
     private static Udo parseKeyValueArgs(String[] pairs) {
-        Map<String, List<String>> collectedValues = new LinkedHashMap<String, List<String>>();
+        Map<String, List<String>> collectedValues = new LinkedHashMap<>();
 
         for (String pair : pairs) {
             int separatorIndex = pair.indexOf('=');
@@ -197,7 +197,7 @@ public final class ExampleApp {
             String key = pair.substring(0, separatorIndex);
             String value = pair.substring(separatorIndex + 1);
 
-            collectedValues.computeIfAbsent(key, k -> new ArrayList<String>()).add(value);
+            collectedValues.computeIfAbsent(key, k -> new ArrayList<>()).add(value);
         }
 
         Udo udo = new Udo();
@@ -244,12 +244,13 @@ public final class ExampleApp {
         out.println("Usage: ./gradlew :example:run --args=\"[global options] <command> [args]\"");
         out.println();
         out.println("Global options:");
-        out.println("  --account <name>      Tealium account (default: tealiummobile)");
-        out.println("  --profile <name>      Tealium profile (default: demo)");
-        out.println("  --env <name>          Tealium environment (default: dev)");
-        out.println("  --datasource <id>     Tealium datasource (optional)");
-        out.println("  --timeout <ms>        Dispatch timeout in milliseconds (optional)");
-        out.println("  --log-level <level>   VERBOSE, WARNINGS, ERRORS, or NONE (default: VERBOSE)");
+        out.println("  --account <name>        Tealium account (default: tealiummobile)");
+        out.println("  --profile <name>        Tealium profile (default: demo)");
+        out.println("  --env <name>            Tealium environment (default: dev)");
+        out.println("  --datasource <id>       Tealium datasource (optional)");
+        out.println("  --timeout <ms>          Read timeout in milliseconds (optional)");
+        out.println("  --connect-timeout <ms>  Connect timeout in milliseconds (optional)");
+        out.println("  --log-level <level>     VERBOSE, WARNINGS, ERRORS, or NONE (default: VERBOSE)");
         out.println();
         out.println("Commands:");
         out.println("  track <title> [key=value ...]   Send an activity event");
@@ -270,6 +271,7 @@ public final class ExampleApp {
         String environment = "dev";
         String datasource = null;
         Integer timeoutMillis = null;
+        Integer connectTimeoutMillis = null;
         com.tealium.LogLevel logLevel = com.tealium.LogLevel.VERBOSE;
         String[] remainingArgs = new String[0];
 
@@ -293,7 +295,10 @@ public final class ExampleApp {
                         options.datasource = requiredValue(args, flag, ++index);
                         break;
                     case "--timeout":
-                        options.timeoutMillis = parseTimeout(requiredValue(args, flag, ++index));
+                        options.timeoutMillis = parseTimeout(flag, requiredValue(args, flag, ++index));
+                        break;
+                    case "--connect-timeout":
+                        options.connectTimeoutMillis = parseTimeout(flag, requiredValue(args, flag, ++index));
                         break;
                     case "--log-level":
                         options.logLevel = parseLogLevel(requiredValue(args, flag, ++index));
@@ -318,6 +323,9 @@ public final class ExampleApp {
             if (timeoutMillis != null) {
                 builder.setTimeout(timeoutMillis);
             }
+            if (connectTimeoutMillis != null) {
+                builder.setConnectTimeout(connectTimeoutMillis);
+            }
             return builder.build();
         }
 
@@ -328,11 +336,11 @@ public final class ExampleApp {
             return args[index];
         }
 
-        private static int parseTimeout(String value) {
+        private static int parseTimeout(String flag, String value) {
             try {
                 return Integer.parseInt(value);
             } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Invalid --timeout value: " + value);
+                throw new IllegalArgumentException("Invalid " + flag + " value: " + value);
             }
         }
 

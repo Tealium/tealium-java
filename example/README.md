@@ -22,7 +22,7 @@ From the repository root, using the root Gradle wrapper:
 
 ```bash
 ./gradlew :example:run --args="--account mycompany --profile main --env prod track app_open"
-./gradlew :example:run --args="--timeout 3000 --log-level ERRORS track button_click color=red"
+./gradlew :example:run --args="--timeout 3000 --connect-timeout 1000 --log-level ERRORS track button_click color=red"
 ```
 
 Building only:
@@ -50,7 +50,8 @@ A key passed more than once (e.g. `a=1 a=2`) is sent as a list value.
 | `--profile` | `demo` | Tealium profile |
 | `--env` | `dev` | Tealium environment |
 | `--datasource` | (none) | Tealium datasource id |
-| `--timeout` | SDK default (5000ms) | Dispatch timeout in milliseconds |
+| `--timeout` | SDK default (5000ms) | Read timeout in milliseconds |
+| `--connect-timeout` | (unset: JVM/OS default) | Connect timeout in milliseconds |
 | `--log-level` | `VERBOSE` | One of `VERBOSE`, `WARNINGS`, `ERRORS`, `NONE` |
 
 ## Persistent data file
