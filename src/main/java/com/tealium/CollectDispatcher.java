@@ -28,6 +28,7 @@ final class CollectDispatcher {
     private final String endpoint;
     private final Logger logger;
     private final int timeout;
+    private final Integer connectTimeout;
 
     // =========================================================================
     // PUBLIC
@@ -35,21 +36,46 @@ final class CollectDispatcher {
 
     /**
      * Constructor for creating an instance of the Tealium Collect Dispatch
-     * service
-     * 
+     * service, with no connect timeout set (so the JVM's
+     * {@code -Dsun.net.client.defaultConnectTimeout} system property, or the operating system's own limit,
+     * applies instead).
+     *
      * @param endpoint
      *            The target url to send track dispatches to. Should NOT include
      *            any ending query strings or "?" suffix.
      * @param context
      *            Library context providing the logger.
      * @param timeout
-     *            Read timeout for the collect call, in milliseconds.
+     *            Read timeout for the collect call, in milliseconds. Applied to each read of the response
+     *            individually, not to the request as a whole.
      */
     public CollectDispatcher(String endpoint, LibraryContext context, int timeout) {
+        this(endpoint, context, timeout, null);
+    }
+
+    /**
+     * Constructor for creating an instance of the Tealium Collect Dispatch
+     * service.
+     *
+     * @param endpoint
+     *            The target url to send track dispatches to. Should NOT include
+     *            any ending query strings or "?" suffix.
+     * @param context
+     *            Library context providing the logger.
+     * @param timeout
+     *            Read timeout for the collect call, in milliseconds. Applied to each read of the response
+     *            individually, not to the request as a whole.
+     * @param connectTimeout
+     *            Connect timeout for the collect call, in milliseconds, or null to leave it unset so the JVM's
+     *            {@code -Dsun.net.client.defaultConnectTimeout} system property, or the operating system's own
+     *            limit, applies instead.
+     */
+    public CollectDispatcher(String endpoint, LibraryContext context, int timeout, Integer connectTimeout) {
         super();
         this.endpoint = endpoint;
         this.logger = context.getLogger();
         this.timeout = timeout;
+        this.connectTimeout = connectTimeout;
     }
 
     /**
@@ -120,11 +146,7 @@ final class CollectDispatcher {
 
             connection = (HttpURLConnection) url.openConnection();
 
-            connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-            connection.setRequestProperty("Accept", "application/json; charset=UTF-8");
-            connection.setDoOutput(true);
-            connection.setRequestMethod("POST");
-            connection.setReadTimeout(this.timeout);
+            configureConnection(connection);
 
         } catch (MalformedURLException e) {
             CollectDispatchException err =
@@ -162,6 +184,26 @@ final class CollectDispatcher {
         }
 
         return connection;
+    }
+
+    /**
+     * Test seam: applies this dispatcher's request configuration (headers, method, read timeout, and connect
+     * timeout if set) to a connection. Package-private so tests can drive it with a mock
+     * {@code HttpURLConnection} without making a real request.
+     *
+     * @param connection The connection to configure
+     * @throws ProtocolException if the connection doesn't support the "POST" request method
+     */
+    void configureConnection(HttpURLConnection connection) throws ProtocolException {
+        connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+        connection.setRequestProperty("Accept", "application/json; charset=UTF-8");
+        connection.setDoOutput(true);
+        connection.setRequestMethod("POST");
+        connection.setReadTimeout(this.timeout);
+
+        if (this.connectTimeout != null) {
+            connection.setConnectTimeout(this.connectTimeout);
+        }
     }
 
     /**
