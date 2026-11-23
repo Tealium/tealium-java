@@ -55,6 +55,13 @@ public class FailedRequestExceptionTests {
         assertEquals("Response code 500; body:    ", e.getMessage());
     }
 
+    @Test
+    public void testMessageWithControlCharactersInXErrorIsCleaned() {
+        FailedRequestException e = new FailedRequestException(200, "invalid\u0007account\u001Bend", null, null);
+
+        assertEquals("Response code 200; x-error: invalid account end", e.getMessage());
+    }
+
     // formatBody
 
     @Test
@@ -62,6 +69,13 @@ public class FailedRequestExceptionTests {
         byte[] body = "line1\r\nline2\rline3\nline4".getBytes(StandardCharsets.UTF_8);
 
         assertEquals("line1 line2 line3 line4", FailedRequestException.formatBody(body));
+    }
+
+    @Test
+    public void testFormatBodyReplacesEscapeSequenceWithSingleSpace() {
+        byte[] body = "\u001B[2J".getBytes(StandardCharsets.UTF_8);
+
+        assertEquals(" [2J", FailedRequestException.formatBody(body));
     }
 
     @Test
@@ -95,6 +109,28 @@ public class FailedRequestExceptionTests {
         String text = "café éèà üñ";
 
         assertEquals(text, FailedRequestException.formatBody(text.getBytes(StandardCharsets.UTF_8)));
+    }
+
+    // replaceControlCharacters
+
+    @Test
+    public void testReplaceControlCharactersReplacesCrLfPairWithSingleSpace() {
+        assertEquals("a b", FailedRequestException.replaceControlCharacters("a\r\nb"));
+    }
+
+    @Test
+    public void testReplaceControlCharactersReplacesLoneCrOrLfWithSingleSpace() {
+        assertEquals("a b c", FailedRequestException.replaceControlCharacters("a\rb\nc"));
+    }
+
+    @Test
+    public void testReplaceControlCharactersReplacesTabNulDelAndC1ControlWithSingleSpace() {
+        assertEquals("a b c d e", FailedRequestException.replaceControlCharacters("a\tb\u0000c\u007Fd\u009Be"));
+    }
+
+    @Test
+    public void testReplaceControlCharactersLeavesNonControlNonAsciiCharactersUntouched() {
+        assertEquals("café 😀", FailedRequestException.replaceControlCharacters("café 😀"));
     }
 
     private static String repeat(char c, int count) {

@@ -35,7 +35,7 @@ class FailedRequestException extends RuntimeException {
         StringBuilder message = new StringBuilder("Response code ").append(statusCode);
 
         if (xError != null) {
-            message.append("; x-error: ").append(xError);
+            message.append("; x-error: ").append(replaceControlCharacters(xError));
         }
 
         if (body != null && body.length > 0) {
@@ -46,40 +46,54 @@ class FailedRequestException extends RuntimeException {
     }
 
     /**
-     * Decodes a response body as UTF-8, collapses each {@code \r\n}, {@code \r} or {@code \n} into a single
-     * space, and truncates the result to {@value #MAX_BODY_MESSAGE_CHARS} characters without splitting a
-     * surrogate pair, appending "…" only when the collapsed text was actually longer than that.
+     * Decodes a response body as UTF-8, replaces control characters (see
+     * {@link #replaceControlCharacters(String)}) with spaces, and truncates the result to
+     * {@value #MAX_BODY_MESSAGE_CHARS} characters without splitting a surrogate pair, appending "…" only when
+     * the cleaned text was actually longer than that.
      *
      * @param body The response body's bytes; must be non-null and non-empty
      * @return The body text to use in the exception message
      */
     static String formatBody(byte[] body) {
         String decoded = new String(body, StandardCharsets.UTF_8);
-        StringBuilder collapsed = new StringBuilder(decoded.length());
+        String cleaned = replaceControlCharacters(decoded);
 
-        for (int i = 0; i < decoded.length(); i++) {
-            char c = decoded.charAt(i);
-            if (c == '\r') {
-                collapsed.append(' ');
-                if (i + 1 < decoded.length() && decoded.charAt(i + 1) == '\n') {
-                    i++;
-                }
-            } else if (c == '\n') {
-                collapsed.append(' ');
-            } else {
-                collapsed.append(c);
-            }
-        }
-
-        if (collapsed.length() <= MAX_BODY_MESSAGE_CHARS) {
-            return collapsed.toString();
+        if (cleaned.length() <= MAX_BODY_MESSAGE_CHARS) {
+            return cleaned;
         }
 
         int cut = MAX_BODY_MESSAGE_CHARS;
-        if (Character.isHighSurrogate(collapsed.charAt(cut - 1)) && Character.isLowSurrogate(collapsed.charAt(cut))) {
+        if (Character.isHighSurrogate(cleaned.charAt(cut - 1)) && Character.isLowSurrogate(cleaned.charAt(cut))) {
             cut--;
         }
 
-        return collapsed.substring(0, cut) + "…";
+        return cleaned.substring(0, cut) + "…";
+    }
+
+    /**
+     * Replaces each {@code \r\n} pair, and every other character for which {@link Character#isISOControl(char)}
+     * is true (the C0 controls, including tab, CR and LF; DEL; and the C1 controls), with a single space.
+     * Nothing else changes: there's no trimming and no collapsing of runs of spaces. This keeps control
+     * characters from a server's response (e.g. terminal escape sequences) out of logs and callbacks.
+     *
+     * @param text The text to clean
+     * @return The text with control characters replaced by spaces
+     */
+    static String replaceControlCharacters(String text) {
+        StringBuilder cleaned = new StringBuilder(text.length());
+
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (c == '\r' && i + 1 < text.length() && text.charAt(i + 1) == '\n') {
+                cleaned.append(' ');
+                i++;
+            } else if (Character.isISOControl(c)) {
+                cleaned.append(' ');
+            } else {
+                cleaned.append(c);
+            }
+        }
+
+        return cleaned.toString();
     }
 }

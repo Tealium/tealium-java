@@ -291,6 +291,20 @@ public class CollectDispatcherConnectionTests {
     }
 
     @Test
+    public void test200WithControlCharactersInXErrorProducesCleanedPinnedErrorMessage() throws Exception {
+        // addHeaderLenient skips the usual header validation, so the ESC and BEL bytes reach the client as-is.
+        server.enqueue(new MockResponse.Builder()
+                .code(200)
+                .addHeaderLenient("x-error", "invalid\u0007account\u001Bend")
+                .build());
+
+        Result result = dispatch(newDispatcher(3000));
+
+        assertEquals("com.tealium.FailedRequestException: Response code 200; x-error: invalid account end",
+                result.error);
+    }
+
+    @Test
     public void test500WithEmptyBodyOmitsBodyPartOfErrorMessage() throws Exception {
         server.enqueue(new MockResponse.Builder().code(500).body("").build());
 
