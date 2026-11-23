@@ -124,7 +124,9 @@ public class CollectDispatcherTests {
         long elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
 
         assertFalse(successHolder[0]);
-        assertNotNull(errorHolder[0]);
+        assertEquals("com.tealium.FailedConnectionException: Could not get response from server: "
+                        + "java.net.SocketTimeoutException: Read timed out",
+                errorHolder[0]);
         // bounded by the 200ms read timeout, well short of the server's 1000ms headers delay
         assertTrue("dispatch took " + elapsedMs + "ms, expected it to be bounded by the read timeout",
                 elapsedMs < 600);
@@ -141,15 +143,20 @@ public class CollectDispatcherTests {
                 TestLibraryContext.newInstance(), 3000);
 
         final CountDownLatch barrier = new CountDownLatch(1);
+        final String[] errorHolder = new String[1];
 
         DispatchCallback callBack = (success, info, error) -> {
             assertFalse(success);
+            errorHolder[0] = error;
             barrier.countDown();
         };
 
         collect.dispatch(new Udo(), callBack);
 
         assertTrue(barrier.await(5, TimeUnit.SECONDS));
+        assertEquals("com.tealium.FailedConnectionException: Could not open connection with server: "
+                        + "java.net.ConnectException: Connection refused",
+                errorHolder[0]);
     }
 
     // LOGGING TESTS
@@ -179,7 +186,7 @@ public class CollectDispatcherTests {
 
         collect.dispatch(new Udo(), null);
 
-        assertTrue(logged(output).contains("Dispatch failed with response code 400: invalid payload"));
+        assertTrue(logged(output).contains("Response code 400; x-error: invalid payload"));
     }
 
     @Test

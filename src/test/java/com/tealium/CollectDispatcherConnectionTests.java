@@ -222,7 +222,98 @@ public class CollectDispatcherConnectionTests {
 
         assertFalse(result.success);
         assertFailedRequest(result);
+        assertTrue(result.error, result.error.contains("; body: "));
+        assertTrue(result.error, result.error.contains("x"));
         assertNotEquals(takeRequest().getConnectionIndex(), takeRequest().getConnectionIndex());
+    }
+
+    // ERROR MESSAGES
+
+    @Test
+    public void test400WithShortBodyProducesPinnedErrorMessage() throws Exception {
+        server.enqueue(new MockResponse.Builder().code(400).body("bad request").build());
+
+        Result result = dispatch(newDispatcher(3000));
+
+        assertEquals("com.tealium.FailedRequestException: Response code 400; body: bad request", result.error);
+    }
+
+    @Test
+    public void test404WithShortBodyProducesPinnedErrorMessage() throws Exception {
+        server.enqueue(new MockResponse.Builder().code(404).body("not found").build());
+
+        Result result = dispatch(newDispatcher(3000));
+
+        assertEquals("com.tealium.FailedRequestException: Response code 404; body: not found", result.error);
+    }
+
+    @Test
+    public void test429WithShortBodyProducesPinnedErrorMessage() throws Exception {
+        server.enqueue(new MockResponse.Builder().code(429).body("too many requests").build());
+
+        Result result = dispatch(newDispatcher(3000));
+
+        assertEquals("com.tealium.FailedRequestException: Response code 429; body: too many requests", result.error);
+    }
+
+    @Test
+    public void test500WithShortBodyProducesPinnedErrorMessage() throws Exception {
+        server.enqueue(new MockResponse.Builder().code(500).body("internal error").build());
+
+        Result result = dispatch(newDispatcher(3000));
+
+        assertEquals("com.tealium.FailedRequestException: Response code 500; body: internal error", result.error);
+    }
+
+    @Test
+    public void test200WithXErrorAndNoBodyProducesPinnedErrorMessage() throws Exception {
+        server.enqueue(successResponse().addHeader("x-error", "invalid account").build());
+
+        Result result = dispatch(newDispatcher(3000));
+
+        assertEquals("com.tealium.FailedRequestException: Response code 200; x-error: invalid account",
+                result.error);
+    }
+
+    @Test
+    public void test200WithXErrorAndBodyProducesPinnedErrorMessage() throws Exception {
+        server.enqueue(new MockResponse.Builder()
+                .code(200)
+                .addHeader("x-error", "invalid account")
+                .body("rejected")
+                .build());
+
+        Result result = dispatch(newDispatcher(3000));
+
+        assertEquals(
+                "com.tealium.FailedRequestException: Response code 200; x-error: invalid account; body: rejected",
+                result.error);
+    }
+
+    @Test
+    public void test500WithEmptyBodyOmitsBodyPartOfErrorMessage() throws Exception {
+        server.enqueue(new MockResponse.Builder().code(500).body("").build());
+
+        Result result = dispatch(newDispatcher(3000));
+
+        assertEquals("com.tealium.FailedRequestException: Response code 500", result.error);
+    }
+
+    @Test
+    public void test500WithLongBodyContainingLineBreaksProducesTruncatedPinnedErrorMessage() throws Exception {
+        StringBuilder longBody = new StringBuilder();
+        for (int i = 0; i < 100; i++) {
+            // alternate line endings so the body exercises both "\r\n" and a bare "\n"
+            longBody.append("ab").append(i % 2 == 0 ? "\r\n" : "\n");
+        }
+        // 100 * "ab" + a line break collapses to 300 chars, well over the 256 char cut
+        server.enqueue(new MockResponse.Builder().code(500).body(longBody.toString()).build());
+
+        Result result = dispatch(newDispatcher(3000));
+
+        String collapsed = longBody.toString().replace("\r\n", " ").replace("\r", " ").replace("\n", " ");
+        String expectedBody = collapsed.substring(0, 256) + "…";
+        assertEquals("com.tealium.FailedRequestException: Response code 500; body: " + expectedBody, result.error);
     }
 
     // NO RETRIES
@@ -248,25 +339,50 @@ public class CollectDispatcherConnectionTests {
 
     @Test
     public void testReleaseConnectionReadsAtMost8KbOfFailureBody() throws Exception {
-        FakeHttpURLConnection connection = new FakeHttpURLConnection(LARGE_BODY_SIZE, true);
+        CountingInputStream body = new CountingInputStream(LARGE_BODY_SIZE);
+        FakeHttpURLConnection connection = new FakeHttpURLConnection(body, true);
 
-        newDispatcher(3000).releaseConnection(connection, 500, false);
+        byte[] result = newDispatcher(3000).releaseConnection(connection, 500, false);
 
-        assertEquals(CollectDispatcher.MAX_FAILURE_BODY_BYTES, connection.body.bytesRead);
-        assertTrue(connection.body.closed);
+        assertEquals(CollectDispatcher.MAX_FAILURE_BODY_BYTES, body.bytesRead);
+        assertEquals(CollectDispatcher.MAX_FAILURE_BODY_BYTES, result.length);
+        assertTrue(body.closed);
         assertFalse(connection.disconnected);
     }
 
     @Test
-    public void testReleaseConnectionReadsEntireSuccessBody() throws Exception {
+    public void testReleaseConnectionReadsEntireSuccessBodyAndReturnsNull() throws Exception {
         int bodySize = 1024 * 1024;
-        FakeHttpURLConnection connection = new FakeHttpURLConnection(bodySize, false);
+        CountingInputStream body = new CountingInputStream(bodySize);
+        FakeHttpURLConnection connection = new FakeHttpURLConnection(body, false);
 
-        newDispatcher(3000).releaseConnection(connection, 200, true);
+        byte[] result = newDispatcher(3000).releaseConnection(connection, 200, true);
 
-        assertEquals(bodySize, connection.body.bytesRead);
-        assertTrue(connection.body.closed);
+        assertEquals(bodySize, body.bytesRead);
+        assertNull(result);
+        assertTrue(body.closed);
         assertFalse(connection.disconnected);
+    }
+
+    @Test
+    public void testReleaseConnectionReturnsNullWhenThereIsNoStream() throws Exception {
+        FakeHttpURLConnection connection = new FakeHttpURLConnection(null, true);
+
+        byte[] result = newDispatcher(3000).releaseConnection(connection, 500, false);
+
+        assertNull(result);
+        assertFalse(connection.disconnected);
+    }
+
+    @Test
+    public void testReleaseConnectionReturnsBytesReadBeforeAReadFailure() throws Exception {
+        byte[] partialBody = "partial body before the stream breaks".getBytes(StandardCharsets.UTF_8);
+        FakeHttpURLConnection connection = new FakeHttpURLConnection(new BreakingInputStream(partialBody), true);
+
+        byte[] result = newDispatcher(3000).releaseConnection(connection, 500, false);
+
+        assertArrayEquals(partialBody, result);
+        assertTrue(connection.disconnected);
     }
 
     // HELPERS
@@ -348,13 +464,13 @@ public class CollectDispatcherConnectionTests {
      */
     private static final class FakeHttpURLConnection extends HttpURLConnection {
 
-        final CountingInputStream body;
+        final InputStream body;
         private final boolean bodyIsError;
         boolean disconnected;
 
-        FakeHttpURLConnection(int bodySize, boolean bodyIsError) throws Exception {
+        FakeHttpURLConnection(InputStream body, boolean bodyIsError) throws Exception {
             super(new URL("http://localhost/"));
-            this.body = new CountingInputStream(bodySize);
+            this.body = body;
             this.bodyIsError = bodyIsError;
         }
 
@@ -409,6 +525,36 @@ public class CollectDispatcherConnectionTests {
         public void close() throws IOException {
             closed = true;
             super.close();
+        }
+    }
+
+    /**
+     * A body stream that hands out a fixed chunk of data, in short reads like a socket, then fails as if the
+     * underlying connection broke.
+     */
+    private static final class BreakingInputStream extends InputStream {
+
+        private final byte[] data;
+        private int position;
+
+        BreakingInputStream(byte[] data) {
+            this.data = data;
+        }
+
+        @Override
+        public int read() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int read(byte[] buffer, int offset, int length) throws IOException {
+            if (position >= data.length) {
+                throw new IOException("simulated read failure");
+            }
+            int read = Math.min(length, data.length - position);
+            System.arraycopy(data, position, buffer, offset, read);
+            position += read;
+            return read;
         }
     }
 
