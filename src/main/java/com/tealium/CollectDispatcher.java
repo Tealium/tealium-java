@@ -1,5 +1,6 @@
 package com.tealium;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -241,7 +242,7 @@ final class CollectDispatcher {
                 os.close();
             } catch (IOException e) {
                 connection.disconnect();
-                throw new FailedConnectionException("Could not open connection with server.", e);
+                throw new FailedConnectionException("Could not open connection with server: " + e, e);
             }
 
             // get result
@@ -249,7 +250,7 @@ final class CollectDispatcher {
                 responseCode = connection.getResponseCode();
             } catch (IOException e) {
                 connection.disconnect();
-                throw new FailedConnectionException("Could not get response from server.", e);
+                throw new FailedConnectionException("Could not get response from server: " + e, e);
             }
 
             // check the response for serverside issues, including any complaints about the payload;
@@ -257,14 +258,12 @@ final class CollectDispatcher {
             String responseError = connection.getHeaderField("x-error");
             headers = connection.getHeaderFields();
 
-            if (responseError == null && (responseCode < 200 || responseCode > 299)) {
-                responseError = "Unexpected response code received: " + responseCode;
-            }
+            boolean success = responseError == null && responseCode >= 200 && responseCode <= 299;
 
-            releaseConnection(connection, responseCode, responseError == null);
+            byte[] body = releaseConnection(connection, responseCode, success);
 
-            if (responseError != null) {
-                throw new FailedRequestException(responseCode, responseError, headers);
+            if (!success) {
+                throw new FailedRequestException(responseCode, responseError, body, headers);
             }
 
             // call the dispatch callback
@@ -275,8 +274,7 @@ final class CollectDispatcher {
                     data,
                     null);
         } catch (FailedRequestException e) {
-            this.logger.log("Dispatch failed with response code " + e.statusCode + ": " + e.customMessage,
-                    LogLevel.ERRORS);
+            this.logger.log(e.getMessage(), LogLevel.ERRORS);
             callCallback(callback,
                     false,
                     this.endpoint,
@@ -296,20 +294,25 @@ final class CollectDispatcher {
 
     /**
      * Test seam: reads the response body so the JDK can reuse the connection, then closes it. A successful
-     * response's body is read to the end; at most {@value #MAX_FAILURE_BODY_BYTES} bytes of a failed one are
-     * read. On close, the JDK keeps the connection if the rest of the body has already arrived, drains up to
-     * 512 KB of it on a background thread, or closes the socket. If reading fails, the connection is
-     * disconnected; that doesn't change the dispatch's result.
+     * response's body is read to the end without being buffered, and this returns null. A failed response's
+     * body is buffered and returned, up to {@value #MAX_FAILURE_BODY_BYTES} bytes, including whatever was read
+     * before a read failure. On close, the JDK keeps the connection if the rest of the body has already
+     * arrived, drains up to 512 KB of it on a background thread, or closes the socket. If reading fails, the
+     * connection is disconnected; that doesn't change the dispatch's result.
      *
      * @param connection The connection the response was received on
      * @param responseCode The response's status code
      * @param success Whether the dispatch succeeded
+     * @return The failed response's body bytes (at most {@value #MAX_FAILURE_BODY_BYTES}), or null for a
+     *         successful response or when there's no body stream
      */
-    void releaseConnection(HttpURLConnection connection, int responseCode, boolean success) {
+    byte[] releaseConnection(HttpURLConnection connection, int responseCode, boolean success) {
+        ByteArrayOutputStream failureBody = success ? null : new ByteArrayOutputStream();
+
         try {
             InputStream body = responseCode < 400 ? connection.getInputStream() : connection.getErrorStream();
             if (body == null) {
-                return;
+                return null;
             }
 
             int limit = success ? Integer.MAX_VALUE : MAX_FAILURE_BODY_BYTES;
@@ -318,12 +321,17 @@ final class CollectDispatcher {
             int read;
             while (total < limit && (read = body.read(buffer, 0, Math.min(buffer.length, limit - total))) != -1) {
                 total += read;
+                if (failureBody != null) {
+                    failureBody.write(buffer, 0, read);
+                }
             }
             body.close();
         } catch (IOException e) {
             connection.disconnect();
             this.logger.log("Could not read the response body: " + e, LogLevel.VERBOSE);
         }
+
+        return failureBody == null ? null : failureBody.toByteArray();
     }
 
     // =========================================================================
